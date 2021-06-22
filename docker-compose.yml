@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+
+  keygen:
+    build:
+      context: ./keygen
+      args:
+        ssh_key:
+    environment:
+      - GENERATOR_PREDEFINEDKEYSCOUNT=100
+      - GENERATOR_DELAY=1s
+      - GENERATOR_KEYLEN=8
+      - GRPC_PORT=8081
+      - REDISUNUSEDKEYS_ADDR=redis-keygen:6379
+      - REDISUNUSEDKEYS_DB=1
+      - REDISUSEDKEYS_ADDR=redis-keygen:6379
+      - REDISUSEDKEYS_DB=2
+      - KEYS_TTL=1h
+    ports:
+      - "8084:8081"
+    expose:
+      - "8081"
+
+  redis-keygen:
+    image: redis:6.0.9-alpine3.12
+    restart: always
+    ports:
+      - 6479:6379
