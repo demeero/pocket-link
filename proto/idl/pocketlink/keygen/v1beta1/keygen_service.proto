@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package pocketlink.keygen.v1beta1;
+
+option go_package = "github.com/demeero/pocket-link/proto/gen/go/pocketlink/keygen/v1beta1";
+
+import "google/protobuf/timestamp.proto";
+
+service KeygenService {
+  rpc GenerateKey (GenerateKeyRequest) returns (GenerateKeyResponse) {}
+}
+
+message Key {
+  string val = 1;
+  google.protobuf.Timestamp expire_time = 2;
+}
+
+message GenerateKeyRequest {}
+
+message GenerateKeyResponse {
+  Key key = 1;
+}
