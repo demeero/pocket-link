@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/kelseyhightower/envconfig"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -17,6 +21,7 @@ import (
 	"github.com/demeero/pocket-link/keygen/config"
 	"github.com/demeero/pocket-link/keygen/controller/rpc"
 	"github.com/demeero/pocket-link/keygen/key"
+	mongorepo "github.com/demeero/pocket-link/keygen/repository/mongo"
 	redisrepo "github.com/demeero/pocket-link/keygen/repository/redis"
 )
 
@@ -33,10 +38,10 @@ func main() {
 	}
 	logger.Sugar().Debugf("config: %+v", cfg)
 
-	usedRepo := redisrepo.NewUsedKeys(redis.NewClient(&redis.Options{
-		Addr: cfg.RedisUsedKeys.Addr,
-		DB:   int(cfg.RedisUsedKeys.DB),
-	}))
+	usedRepo, err := createUsedKeysRepo(cfg)
+	if err != nil {
+		logger.Fatal("error create used keys repository", zap.Error(err))
+	}
 	unusedRepo := redisrepo.NewUnusedKeys(redis.NewClient(&redis.Options{
 		Addr: cfg.RedisUnusedKeys.Addr,
 		DB:   int(cfg.RedisUnusedKeys.DB),
@@ -58,5 +63,31 @@ func grpcServ(cfg config.GRPC, k *key.Keys) {
 	}
 	if err := grpcServ.Serve(lis); err != nil {
 		zap.L().Fatal("failed to serve GRPC", zap.Error(err))
+	}
+}
+
+func createUsedKeysRepo(cfg config.Config) (key.UsedKeysRepository, error) {
+	if cfg.UsedKeysRepositoryType == "" {
+		cfg.UsedKeysRepositoryType = config.UsedKeysRepositoryTypeRedis
+	}
+	switch cfg.UsedKeysRepositoryType {
+	case config.UsedKeysRepositoryTypeMongo:
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.MongoUsedKeys.URI))
+		if err != nil {
+			return nil, err
+		}
+		if err = client.Ping(ctx, readpref.Primary()); err != nil {
+			return nil, err
+		}
+		return mongorepo.NewUsedKeys(client.Database("pocket-link"))
+	case config.UsedKeysRepositoryTypeRedis:
+		return redisrepo.NewUsedKeys(redis.NewClient(&redis.Options{
+			Addr: cfg.RedisUsedKeys.Addr,
+			DB:   int(cfg.RedisUsedKeys.DB),
+		})), nil
+	default:
+		return nil, fmt.Errorf("unsupported used keys repository type: %s", cfg.UsedKeysRepositoryType)
 	}
 }

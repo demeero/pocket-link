@@ -3,15 +3,28 @@ package config
 import "github.com/demeero/pocket-link/keygen/key"
 
 type Config struct {
-	GRPC            GRPC
-	RedisUsedKeys   RedisUsedKeys
-	RedisUnusedKeys RedisUnusedKeys
-	Keys            key.KeysConfig
-	Generator       key.GeneratorConfig
+	GRPC                   GRPC
+	UsedKeysRepositoryType UsedKeysRepositoryType
+	RedisUsedKeys          RedisUsedKeys
+	MongoUsedKeys          MongoUsedKeys
+	RedisUnusedKeys        RedisUnusedKeys
+	Keys                   key.KeysConfig
+	Generator              key.GeneratorConfig
 }
 
 type GRPC struct {
 	Port int
+}
+
+type UsedKeysRepositoryType string
+
+const (
+	UsedKeysRepositoryTypeRedis UsedKeysRepositoryType = "redis"
+	UsedKeysRepositoryTypeMongo UsedKeysRepositoryType = "mongo"
+)
+
+type MongoUsedKeys struct {
+	URI string // e.g. mongodb://localhost:27017
 }
 
 type RedisUsedKeys struct {
