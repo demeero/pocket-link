@@ -2,6 +2,8 @@ version: "3.9"
 services:
 
   keygen:
+    networks:
+      - pocket-link
     build:
       context: ./keygen
       args:
@@ -24,6 +26,8 @@ services:
       - "8081"
 
   links:
+    networks:
+      - pocket-link
     build:
       context: ./links
       args:
@@ -41,6 +45,8 @@ services:
       - "8081"
 
   redirects:
+    networks:
+      - pocket-link
     build:
       context: ./redirects
       args:
@@ -53,27 +59,6 @@ services:
     expose:
       - "8080"
 
-  redis-keygen:
-    image: redis:6.0.9-alpine3.12
-    restart: always
-    ports:
-      - 6479:6379
-
-  mongo-links:
-    image: mongo
-    restart: always
-    ports:
-      - "27018:27017"
-    volumes:
-      - mongo-links-data:/data/db
-
-  mongo-express-links:
-    image: mongo-express
-    restart: always
-    ports:
-      - "8081:8081"
-    environment:
-      - ME_CONFIG_MONGODB_SERVER=mongo-links
-
-volumes:
-  mongo-links-data:
+networks:
+  pocket-link:
+    driver: bridge
