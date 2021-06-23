@@ -8,13 +8,14 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
+
+	"github.com/demeero/pocket-link/bricks/trace"
 )
 
 func EchoMiddleware(logger *zap.Logger) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			// spanID, traceID := trace.FromContext(c.Request().Context())
-			spanID, traceID := "", ""
+			spanID, traceID := trace.FromContext(c.Request().Context())
 			tracedLogger := logger.With(zap.String("span", spanID), zap.String("trace", traceID))
 			ctxWithTracedLogger := To(c.Request().Context(), tracedLogger)
 			c.SetRequest(c.Request().WithContext(ctxWithTracedLogger))
@@ -42,8 +43,7 @@ func EchoMiddleware(logger *zap.Logger) echo.MiddlewareFunc {
 
 func GRPCUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		// spanID, traceID := trace.FromContext(ctx)
-		spanID, traceID := "", ""
+		spanID, traceID := trace.FromContext(ctx)
 
 		logger := From(ctx)
 		logger = logger.With(zap.String("trace", traceID), zap.String("span", spanID))
