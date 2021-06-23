@@ -11,7 +11,10 @@ import (
 	keygenpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/keygen/v1beta1"
 )
 
-var ErrInvalid = errors.New("invalid data")
+var (
+	ErrInvalid  = errors.New("invalid data")
+	ErrNotFound = errors.New("not found")
+)
 
 type Link struct {
 	Shortened string    `json:"shortened,omitempty"`
@@ -22,6 +25,7 @@ type Link struct {
 
 type Repository interface {
 	Create(context.Context, Link) (Link, error)
+	LoadByID(context.Context, string) (Link, error)
 }
 
 type Service struct {
@@ -49,4 +53,8 @@ func (s *Service) Create(ctx context.Context, original string) (Link, error) {
 		Original:  original,
 		ExpAt:     resp.GetKey().GetExpireTime().AsTime(),
 	})
+}
+
+func (s *Service) Get(ctx context.Context, shortened string) (Link, error) {
+	return s.repo.LoadByID(ctx, shortened)
 }

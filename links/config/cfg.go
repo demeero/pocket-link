@@ -2,11 +2,16 @@ package config
 
 type Config struct {
 	HTTP   HTTP
+	GRPC   GRPC
 	Mongo  Mongo
 	Keygen KeygenClient
 }
 
 type HTTP struct {
+	Port int
+}
+
+type GRPC struct {
 	Port int
 }
 

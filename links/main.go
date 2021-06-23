@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"strconv"
 	"time"
 
 	keygenpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/keygen/v1beta1"
+	pb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
 
 	"github.com/kelseyhightower/envconfig"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,9 +18,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	"github.com/demeero/pocket-link/links/config"
 	"github.com/demeero/pocket-link/links/controller/rest"
+	"github.com/demeero/pocket-link/links/controller/rpc"
 	"github.com/demeero/pocket-link/links/repository"
 	"github.com/demeero/pocket-link/links/service"
 )
@@ -50,7 +55,9 @@ func main() {
 	}
 
 	svc := service.New(repo, keygenpb.NewKeygenServiceClient(conn))
-	httpServ(cfg.HTTP, svc)
+
+	go httpServ(cfg.HTTP, svc)
+	grpcServ(cfg.GRPC, svc)
 }
 
 func mongoDB(cfg config.Mongo) (*mongo.Client, error) {
@@ -74,5 +81,19 @@ func httpServ(cfg config.HTTP, s *service.Service) {
 	}).ListenAndServe()
 	if err != nil {
 		zap.L().Fatal("failed to listen HTTP: %v", zap.Error(err))
+	}
+}
+
+func grpcServ(cfg config.GRPC, s *service.Service) {
+	grpcServ := grpc.NewServer()
+	reflection.Register(grpcServ)
+	pb.RegisterLinkServiceServer(grpcServ, rpc.New(s))
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
+	if err != nil {
+		zap.L().Fatal("failed to listen GRPC port", zap.Error(err))
+	}
+	if err := grpcServ.Serve(lis); err != nil {
+		zap.L().Fatal("failed to serve GRPC", zap.Error(err))
 	}
 }

@@ -28,12 +28,15 @@ services:
         ssh_key:
     environment:
       - HTTP_PORT=8080
+      - GRPC_PORT=8081
       - KEYGEN_ADDR=keygen:8081
       - MONGO_URI=mongodb://mongo-links:27017
     ports:
       - "8085:8080"
+      - "8086:8081"
     expose:
       - "8080"
+      - "8081"
 
   redis-keygen:
     image: redis:6.0.9-alpine3.12
@@ -59,10 +62,6 @@ services:
       - "8081:8081"
     environment:
       - ME_CONFIG_MONGODB_SERVER=mongo-links
-  #      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-  #      ME_CONFIG_MONGODB_ADMINPASSWORD: secret
-  #    ME_CONFIG_BASICAUTH_USERNAME: admin
-  #    ME_CONFIG_BASICAUTH_PASSWORD: secret
 
 volumes:
   mongo-links-data:
