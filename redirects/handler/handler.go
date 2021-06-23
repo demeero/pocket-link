@@ -1,21 +1,21 @@
 package handler
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
-	"net/url"
 	"strings"
 
-	linkpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"go.uber.org/zap"
+
+	"github.com/demeero/pocket-link/redirects/link"
 )
 
-func New(linkClient linkpb.LinkServiceClient) http.Handler {
+func New(links *link.Links) http.Handler {
 	e := echo.New()
 	middlewares(e)
-	e.Any("/*", redirect(linkClient))
+	e.Any("/*", redirect(links))
 	return e
 }
 
@@ -23,20 +23,16 @@ func middlewares(e *echo.Echo) {
 	e.Pre(middleware.AddTrailingSlash())
 }
 
-func redirect(linkClient linkpb.LinkServiceClient) echo.HandlerFunc {
+func redirect(links *link.Links) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		shortened := strings.Trim(c.Request().URL.Path, "/")
-		resp, err := linkClient.GetLink(c.Request().Context(), &linkpb.GetLinkRequest{Shortened: shortened})
-		if err != nil {
-			zap.L().Error("error get link for path", zap.Error(err), zap.String("path", shortened))
-			return err
+		u, err := links.Lookup(c.Request().Context(), shortened)
+		if errors.Is(err, link.ErrNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
-		u, err := url.Parse(resp.GetLink().GetOriginal())
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("invalid original URL: %w", err))
-		}
-		if u.Scheme == "" {
-			u.Scheme = "http"
+			zap.L().Error("error get original link", zap.Error(err), zap.String("shortened", shortened))
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		return c.Redirect(http.StatusFound, u.String())
 	}

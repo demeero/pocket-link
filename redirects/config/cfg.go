@@ -1,8 +1,9 @@
 package config
 
 type Config struct {
-	HTTP  HTTP
-	Links LinksClient
+	HTTP     HTTP
+	Links    LinksClient
+	RedisLRU RedisLRU
 }
 
 type HTTP struct {
@@ -10,5 +11,9 @@ type HTTP struct {
 }
 
 type LinksClient struct {
+	Addr string
+}
+
+type RedisLRU struct {
 	Addr string
 }

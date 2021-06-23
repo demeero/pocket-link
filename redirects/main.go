@@ -7,12 +7,14 @@ import (
 
 	linkpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	"github.com/demeero/pocket-link/redirects/config"
 	"github.com/demeero/pocket-link/redirects/handler"
+	"github.com/demeero/pocket-link/redirects/link"
 )
 
 func main() {
@@ -33,13 +35,14 @@ func main() {
 		logger.Fatal("error create grpc links connection", zap.Error(err))
 	}
 
-	httpServ(cfg.HTTP, linkpb.NewLinkServiceClient(conn))
+	l := link.New(linkpb.NewLinkServiceClient(conn), redis.NewClient(&redis.Options{Addr: cfg.RedisLRU.Addr}))
+	httpServ(cfg.HTTP, l)
 }
 
-func httpServ(cfg config.HTTP, c linkpb.LinkServiceClient) {
+func httpServ(cfg config.HTTP, l *link.Links) {
 	err := (&http.Server{
 		Addr:    ":" + strconv.Itoa(cfg.Port),
-		Handler: handler.New(c),
+		Handler: handler.New(l),
 	}).ListenAndServe()
 	if err != nil {
 		zap.L().Fatal("failed to listen HTTP: %v", zap.Error(err))
