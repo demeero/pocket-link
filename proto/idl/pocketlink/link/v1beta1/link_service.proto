@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package pocketlink.link.v1beta1;
+
+option go_package = "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1";
+
+import "google/protobuf/timestamp.proto";
+
+service LinkService {
+  rpc GetLink (GetLinkRequest) returns (GetLinkResponse) {}
+}
+
+message Link {
+  string original = 1;
+  string shortened = 2;
+  google.protobuf.Timestamp create_time = 3;
+  google.protobuf.Timestamp expire_time = 4;
+}
+
+message GetLinkRequest {
+  string shortened = 1;
+}
+
+message GetLinkResponse {
+  Link link = 1;
+}
