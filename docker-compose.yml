@@ -21,8 +21,48 @@ services:
     expose:
       - "8081"
 
+  links:
+    build:
+      context: ./links
+      args:
+        ssh_key:
+    environment:
+      - HTTP_PORT=8080
+      - KEYGEN_ADDR=keygen:8081
+      - MONGO_URI=mongodb://mongo-links:27017
+    ports:
+      - "8085:8080"
+    expose:
+      - "8080"
+
   redis-keygen:
     image: redis:6.0.9-alpine3.12
     restart: always
     ports:
       - 6479:6379
+
+  mongo-links:
+    image: mongo
+    restart: always
+    ports:
+      - "27018:27017"
+    #    environment:
+    #      MONGO_INITDB_ROOT_USERNAME: root
+    #      MONGO_INITDB_ROOT_PASSWORD: secret
+    volumes:
+      - mongo-links-data:/data/db
+
+  mongo-express-links:
+    image: mongo-express
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongo-links
+  #      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+  #      ME_CONFIG_MONGODB_ADMINPASSWORD: secret
+  #    ME_CONFIG_BASICAUTH_USERNAME: admin
+  #    ME_CONFIG_BASICAUTH_PASSWORD: secret
+
+volumes:
+  mongo-links-data:
