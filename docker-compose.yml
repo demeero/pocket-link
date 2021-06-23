@@ -9,6 +9,7 @@ services:
       args:
         ssh_key:
     environment:
+      - TELEMETRY_COLLECTOR_ADDR=otel-collector:55681
       - GENERATOR_PREDEFINEDKEYSCOUNT=100
       - GENERATOR_DELAY=1s
       - GENERATOR_KEYLEN=8

@@ -10,6 +10,7 @@ type Config struct {
 	RedisUnusedKeys        RedisUnusedKeys
 	Keys                   key.KeysConfig
 	Generator              key.GeneratorConfig
+	Telemetry              Telemetry
 }
 
 type GRPC struct {
@@ -35,4 +36,10 @@ type RedisUsedKeys struct {
 type RedisUnusedKeys struct {
 	Addr string
 	DB   uint8
+}
+
+type Telemetry struct {
+	Collector struct {
+		Addr string
+	}
 }
