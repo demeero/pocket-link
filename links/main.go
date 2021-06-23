@@ -9,13 +9,18 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/demeero/pocket-link/bricks/trace"
+	"github.com/demeero/pocket-link/bricks/zaplogger"
 	keygenpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/keygen/v1beta1"
 	pb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
 
+	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/kelseyhightower/envconfig"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -40,6 +45,10 @@ func main() {
 	}
 	logger.Sugar().Debugf("config: %+v", cfg)
 
+	if err := trace.Init(context.Background(), "links", cfg.Telemetry.Collector.Addr); err != nil {
+		logger.Fatal("error init tracing: ", zap.Error(err))
+	}
+
 	mClient, err := mongoDB(cfg.Mongo)
 	if err != nil {
 		logger.Fatal("error init mongo client", zap.Error(err))
@@ -49,7 +58,7 @@ func main() {
 		logger.Fatal("error create repository", zap.Error(err))
 	}
 
-	conn, err := grpc.Dial(cfg.Keygen.Addr, grpc.WithInsecure())
+	conn, err := grpc.Dial(cfg.Keygen.Addr, grpc.WithInsecure(), grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
 	if err != nil {
 		logger.Fatal("error create grpc keygen connection", zap.Error(err))
 	}
@@ -85,7 +94,13 @@ func httpServ(cfg config.HTTP, s *service.Service) {
 }
 
 func grpcServ(cfg config.GRPC, s *service.Service) {
-	grpcServ := grpc.NewServer()
+	grpcServ := grpc.NewServer(
+		grpcmiddleware.WithUnaryServerChain(
+			grpcrecovery.UnaryServerInterceptor(),
+			otelgrpc.UnaryServerInterceptor(),
+			zaplogger.GRPCUnaryServerInterceptor(),
+		),
+	)
 	reflection.Register(grpcServ)
 	pb.RegisterLinkServiceServer(grpcServ, rpc.New(s))
 

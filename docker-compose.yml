@@ -16,8 +16,8 @@ services:
       - GRPC_PORT=8081
       - REDISUNUSEDKEYS_ADDR=redis-keygen:6379
       - REDISUNUSEDKEYS_DB=1
-#      - REDISUSEDKEYS_ADDR=redis-keygen:6379
-#      - REDISUSEDKEYS_DB=2
+      #      - REDISUSEDKEYS_ADDR=redis-keygen:6379
+      #      - REDISUSEDKEYS_DB=2
       - MONGOUSEDKEYS_URI=mongodb://mongo-links:27017
       - USEDKEYSREPOSITORYTYPE=mongo
       - KEYS_TTL=1h
@@ -34,6 +34,7 @@ services:
       args:
         ssh_key:
     environment:
+      - TELEMETRY_COLLECTOR_ADDR=otel-collector:55681
       - HTTP_PORT=8080
       - GRPC_PORT=8081
       - KEYGEN_ADDR=keygen:8081

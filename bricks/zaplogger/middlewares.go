@@ -46,9 +46,13 @@ func GRPCUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		spanID, traceID := trace.FromContext(ctx)
 
 		logger := From(ctx)
-		logger = logger.With(zap.String("trace", traceID), zap.String("span", spanID))
+		logger = logger.With(
+			zap.String("trace", traceID),
+			zap.String("span", spanID),
+			zap.String("method", info.FullMethod),
+		)
 
-		logger.Debug("incoming GRPC req", zap.String("method", info.FullMethod))
+		logger.Debug("incoming GRPC req")
 
 		startTime := time.Now()
 		resp, err := handler(To(ctx, logger), req)

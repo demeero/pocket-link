@@ -1,10 +1,11 @@
 package config
 
 type Config struct {
-	HTTP   HTTP
-	GRPC   GRPC
-	Mongo  Mongo
-	Keygen KeygenClient
+	HTTP      HTTP
+	GRPC      GRPC
+	Mongo     Mongo
+	Keygen    KeygenClient
+	Telemetry Telemetry
 }
 
 type HTTP struct {
@@ -21,4 +22,10 @@ type Mongo struct {
 
 type KeygenClient struct {
 	Addr string
+}
+
+type Telemetry struct {
+	Collector struct {
+		Addr string
+	}
 }

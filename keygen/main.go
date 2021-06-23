@@ -42,7 +42,7 @@ func main() {
 	}
 	logger.Sugar().Debugf("config: %+v", cfg)
 
-	if err := trace.Init(context.Background(), "authors", cfg.Telemetry.Collector.Addr); err != nil {
+	if err := trace.Init(context.Background(), "keygen", cfg.Telemetry.Collector.Addr); err != nil {
 		logger.Fatal("error init tracing: ", zap.Error(err))
 	}
 

@@ -4,8 +4,12 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/demeero/pocket-link/bricks/zaplogger"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
+	"go.uber.org/zap"
 
 	"github.com/demeero/pocket-link/links/service"
 )
@@ -24,6 +28,8 @@ func New(s *service.Service) http.Handler {
 
 func middlewares(e *echo.Echo) {
 	e.Pre(middleware.AddTrailingSlash())
+	e.Use(otelecho.Middleware("links"))
+	e.Use(zaplogger.EchoMiddleware(zap.L()))
 }
 
 func create(s *service.Service) echo.HandlerFunc {
