@@ -27,6 +27,9 @@ func (c *Controller) GetLink(ctx context.Context, req *pb.GetLinkRequest) (*pb.G
 	if errors.Is(err, service.ErrNotFound) {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
+	if err != nil {
+		return nil, err
+	}
 	return &pb.GetLinkResponse{Link: &pb.Link{
 		Original:   l.Original,
 		Shortened:  l.Shortened,
