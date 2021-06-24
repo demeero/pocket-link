@@ -1,9 +1,10 @@
 package config
 
 type Config struct {
-	HTTP     HTTP
-	Links    LinksClient
-	RedisLRU RedisLRU
+	HTTP      HTTP
+	Links     LinksClient
+	RedisLRU  RedisLRU
+	Telemetry Telemetry
 }
 
 type HTTP struct {
@@ -16,4 +17,10 @@ type LinksClient struct {
 
 type RedisLRU struct {
 	Addr string
+}
+
+type Telemetry struct {
+	Collector struct {
+		Addr string
+	}
 }

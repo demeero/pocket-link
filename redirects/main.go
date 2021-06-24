@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"strconv"
 
+	"github.com/demeero/pocket-link/bricks/trace"
+	"github.com/demeero/pocket-link/bricks/zaplogger"
 	linkpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/kelseyhightower/envconfig"
@@ -18,11 +22,10 @@ import (
 )
 
 func main() {
-	logger, err := zap.NewDevelopment()
+	logger, _, err := zaplogger.New(zaplogger.Config{Level: zap.DebugLevel})
 	if err != nil {
 		log.Fatal("error init logger: ", err)
 	}
-	zap.ReplaceGlobals(logger)
 
 	var cfg config.Config
 	if err := envconfig.Process("", &cfg); err != nil {
@@ -30,7 +33,11 @@ func main() {
 	}
 	logger.Sugar().Debugf("config: %+v", cfg)
 
-	conn, err := grpc.Dial(cfg.Links.Addr, grpc.WithInsecure())
+	if err := trace.Init(context.Background(), "redirects", cfg.Telemetry.Collector.Addr); err != nil {
+		logger.Fatal("error init tracing: ", zap.Error(err))
+	}
+
+	conn, err := grpc.Dial(cfg.Links.Addr, grpc.WithInsecure(), grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
 	if err != nil {
 		logger.Fatal("error create grpc links connection", zap.Error(err))
 	}

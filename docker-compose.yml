@@ -54,6 +54,7 @@ services:
       args:
         ssh_key:
     environment:
+      - TELEMETRY_COLLECTOR_ADDR=otel-collector:55681
       - HTTP_PORT=8080
       - LINKS_ADDR=links:8081
       - REDISLRU_ADDR=redis-lru:6380

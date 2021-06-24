@@ -33,11 +33,10 @@ import (
 )
 
 func main() {
-	logger, err := zap.NewDevelopment()
+	logger, _, err := zaplogger.New(zaplogger.Config{Level: zap.DebugLevel})
 	if err != nil {
 		log.Fatal("error init logger: ", err)
 	}
-	zap.ReplaceGlobals(logger)
 
 	var cfg config.Config
 	if err := envconfig.Process("", &cfg); err != nil {
