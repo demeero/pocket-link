@@ -2,8 +2,6 @@ version: "3.9"
 services:
 
   jaeger:
-    networks:
-      - pocket-link
     image: jaegertracing/all-in-one:1.22.0
     expose:
       - "16686"
@@ -12,8 +10,6 @@ services:
       - "16686:16686"
 
   otel-collector:
-    networks:
-      - pocket-link
     image: otel/opentelemetry-collector:0.23.0
     command: [ "--config=/etc/otel-collector-config.yaml", "--log-level=info" ]
     expose:
@@ -24,16 +20,12 @@ services:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
 
   redis-keygen:
-    networks:
-      - pocket-link
     image: redis:6.0.9-alpine3.12
     restart: always
     ports:
       - 6479:6379
 
   redis-lru:
-    networks:
-      - pocket-link
     image: redis:6.0.9-alpine3.12
     restart: always
     command: [ "--port 6380", "--maxmemory 2mb", "--maxmemory-policy allkeys-lru" ]
@@ -41,8 +33,6 @@ services:
       - 6480:6380
 
   mongo-links:
-    networks:
-      - pocket-link
     image: mongo
     restart: always
     ports:
@@ -51,8 +41,6 @@ services:
       - mongo-links-data:/data/db
 
   mongo-express-links:
-    networks:
-      - pocket-link
     image: mongo-express
     restart: always
     ports:
@@ -64,5 +52,5 @@ volumes:
   mongo-links-data:
 
 networks:
-  pocket-link:
-    driver: bridge
+  default:
+    name: pocket-link

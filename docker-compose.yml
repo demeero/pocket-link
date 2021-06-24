@@ -2,8 +2,6 @@ version: "3.9"
 services:
 
   keygen:
-    networks:
-      - pocket-link
     build:
       context: ./keygen
       args:
@@ -27,8 +25,6 @@ services:
       - "8081"
 
   links:
-    networks:
-      - pocket-link
     build:
       context: ./links
       args:
@@ -47,8 +43,6 @@ services:
       - "8081"
 
   redirects:
-    networks:
-      - pocket-link
     build:
       context: ./redirects
       args:
@@ -64,5 +58,5 @@ services:
       - "8080"
 
 networks:
-  pocket-link:
-    driver: bridge
+  default:
+    name: pocket-link
