@@ -19,12 +19,14 @@ type Key struct {
 var ErrKeyAlreadyUsed = errors.New("key already used")
 var ErrKeyNotFound = errors.New("key not found")
 
+//go:generate mockgen -destination=unused_keys_mock.go -package=key github.com/demeero/pocket-link/keygen/key UnusedKeysRepository
 type UnusedKeysRepository interface {
 	LoadAndDelete(context.Context) (string, error)
 	Store(context.Context, ...string) (int64, error)
 	Size(ctx context.Context) (int64, error)
 }
 
+//go:generate mockgen -destination=used_keys_mock.go -package=key github.com/demeero/pocket-link/keygen/key UsedKeysRepository
 type UsedKeysRepository interface {
 	Store(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	Exists(context.Context, string) (bool, error)
@@ -51,7 +53,7 @@ func New(cfg KeysConfig, used UsedKeysRepository, unused UnusedKeysRepository) *
 func (k *Keys) Use(ctx context.Context) (Key, error) {
 	var result Key
 
-	f := func() error {
+	job := func() error {
 		loadedKey, err := k.unused.LoadAndDelete(ctx)
 		if err != nil {
 			return err
@@ -83,7 +85,11 @@ func (k *Keys) Use(ctx context.Context) (Key, error) {
 		return false
 	}
 
-	err := retry.Do(f, retry.RetryIf(retryCond))
+	err := retry.Do(job,
+		retry.RetryIf(retryCond),
+		retry.Context(ctx),
+		retry.LastErrorOnly(true),
+	)
 	if err != nil {
 		return Key{}, err
 	}

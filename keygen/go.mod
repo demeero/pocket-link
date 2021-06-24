@@ -9,7 +9,8 @@ require (
 	github.com/demeero/pocket-link/bricks v0.0.0-20210623194847-f53aadbd5048
 	github.com/demeero/pocket-link/proto/gen/go v0.0.0-20210622173658-fb5b34dca4e2
 	github.com/go-redis/redis/v8 v8.10.0
-	github.com/go-redis/redismock/v8 v8.0.6 // indirect
+	github.com/go-redis/redismock/v8 v8.0.6
+	github.com/golang/mock v1.6.0
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/gomodule/redigo v1.8.5 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
