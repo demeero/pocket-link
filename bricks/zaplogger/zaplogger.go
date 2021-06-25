@@ -6,52 +6,46 @@ import (
 )
 
 type Config struct {
-	Level                    zapcore.Level
-	Development              bool
+	Dev                      bool
 	DisableRedirectStdLog    bool
 	DisableReplaceGlobals    bool
-	DisableSampling          bool
 	Encoding                 string
+	DisableSampling          bool
 	SamplingConfigInitial    int
 	SamplingConfigThereafter int
+	Level                    zapcore.Level
 	Options                  []zap.Option
 }
 
 func New(cfg Config) (*zap.Logger, func(), error) {
-	prodCfg := zap.NewProductionConfig()
-	prodCfg.Level = zap.NewAtomicLevelAt(cfg.Level)
-	prodCfg.Development = cfg.Development
+	logCfg := zap.NewProductionConfig()
+	if cfg.SamplingConfigInitial != 0 {
+		logCfg.Sampling.Initial = cfg.SamplingConfigInitial
+	}
+	if cfg.SamplingConfigThereafter != 0 {
+		logCfg.Sampling.Thereafter = cfg.SamplingConfigThereafter
+	}
 	if cfg.DisableSampling {
-		prodCfg.Sampling = nil
-	} else {
-		if cfg.SamplingConfigInitial != 0 {
-			// Default Initial Sampling is 100
-			prodCfg.Sampling.Initial = cfg.SamplingConfigInitial
-		}
-		if cfg.SamplingConfigThereafter != 0 {
-			// Default Thereafter Sampling is 100
-			prodCfg.Sampling.Thereafter = cfg.SamplingConfigThereafter
-		}
+		logCfg.Sampling = nil
 	}
-
-	// Default encoding is JSON
 	if cfg.Encoding != "" {
-		prodCfg.Encoding = cfg.Encoding
+		logCfg.Encoding = cfg.Encoding
 	}
 
-	logger, err := prodCfg.Build(cfg.Options...)
+	logger, err := logCfg.Build(cfg.Options...)
 	if err != nil {
 		return nil, nil, err
-	}
-	restoreStdLogFunc := func() {}
-	if !cfg.DisableRedirectStdLog {
-		restoreStdLogFunc = zap.RedirectStdLog(logger)
 	}
 	restoreGlobalsFunc := func() {}
 	if !cfg.DisableReplaceGlobals {
 		restoreGlobalsFunc = zap.ReplaceGlobals(logger)
 	}
-
+	restoreStdLogFunc := func() {}
+	if !cfg.DisableRedirectStdLog {
+		restoreStdLogFunc = zap.RedirectStdLog(logger)
+	}
+	logCfg.Development = cfg.Dev
+	logCfg.Level = zap.NewAtomicLevelAt(cfg.Level)
 	return logger, func() {
 		restoreGlobalsFunc()
 		restoreStdLogFunc()
