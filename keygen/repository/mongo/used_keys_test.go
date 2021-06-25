@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 )
 
+// nolint:govet
 func TestUsedKeys_Exists(t *testing.T) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	defer mt.Close()
@@ -53,6 +54,7 @@ func TestUsedKeys_Exists(t *testing.T) {
 	})
 }
 
+// nolint:govet
 func TestUsedKeys_Store(t *testing.T) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	defer mt.Close()

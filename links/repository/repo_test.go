@@ -14,6 +14,7 @@ import (
 	"github.com/demeero/pocket-link/links/service"
 )
 
+// nolint:govet
 func TestRepository_Create(t *testing.T) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	defer mt.Close()
@@ -50,6 +51,7 @@ func TestRepository_Create(t *testing.T) {
 	})
 }
 
+// nolint:govet
 func TestRepository_LoadByID(t *testing.T) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	defer mt.Close()
