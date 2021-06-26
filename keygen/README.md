@@ -1,1 +1,0 @@
-Key Generation Service (KGS) that generates random 8-letter strings beforehand and stores them in a database (let’s call it key-DB). Whenever we want to shorten a URL, we will take one of the already-generated keys and use it. This approach will make things quite simple and fast. KGS will make sure all the keys inserted into key-DB are unique
