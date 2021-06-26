@@ -4,8 +4,6 @@ services:
   keygen:
     build:
       context: ./keygen
-      args:
-        ssh_key:
     environment:
       - TELEMETRY_COLLECTOR_ADDR=otel-collector:55681
       - GENERATOR_PREDEFINEDKEYSCOUNT=100
@@ -27,8 +25,6 @@ services:
   links:
     build:
       context: ./links
-      args:
-        ssh_key:
     environment:
       - TELEMETRY_COLLECTOR_ADDR=otel-collector:55681
       - HTTP_PORT=8080
@@ -45,8 +41,6 @@ services:
   redirects:
     build:
       context: ./redirects
-      args:
-        ssh_key:
     environment:
       - TELEMETRY_COLLECTOR_ADDR=otel-collector:55681
       - HTTP_PORT=8080
@@ -56,6 +50,14 @@ services:
       - "8087:8080"
     expose:
       - "8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "8088:80"
+    expose:
+      - "80"
 
 networks:
   default:
