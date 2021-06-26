@@ -79,7 +79,7 @@ Links service stores association between original URL and the shortened one. It 
 short version of original URL. It handles client's requests to create shortened URL. It provides original URL by the
 shortened one.
 
-Links are stored in MongoDB.
+Links are stored in MongoDB with TTL which is provided by ```keygen``` service.
 
 #### Endpoints
 
@@ -142,8 +142,9 @@ You can check all default values in ```docker-compose.yml``` file.
 ### Redirects service
 
 ```Redirects``` interacts with ```links``` service to get the original URL and redirects to it the user (302 HTTP
-status). It caches the result in Redis with corresponding expiration time. Redis should be configured as LRU cache (see
-example in docker-compose-env/docker-compose.yml ```redis-lru``` - service).
+status). It caches the result in Redis with corresponding expiration time (which is provided by ```links``` service).
+Redis should be configured as LRU cache
+(see example in docker-compose-env/docker-compose.yml ```redis-lru``` - service).
 
 HTTP server listens on the root path "/*".
 
