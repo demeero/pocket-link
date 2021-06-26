@@ -148,6 +148,8 @@ Redis should be configured as LRU cache
 
 HTTP server listens on the root path "/*".
 
+If the original URL was without schema, the service adds ```http``` schema by default.
+
 #### Configuration
 
 You can check all default values in ```docker-compose.yml``` file.

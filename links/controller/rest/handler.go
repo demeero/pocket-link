@@ -28,6 +28,7 @@ func New(s *service.Service) http.Handler {
 
 func middlewares(e *echo.Echo) {
 	e.Pre(middleware.AddTrailingSlash())
+	e.Use(middleware.CORS())
 	e.Use(otelecho.Middleware("links"))
 	e.Use(zaplogger.EchoMiddleware(zap.L()))
 }
