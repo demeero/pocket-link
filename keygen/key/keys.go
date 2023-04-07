@@ -7,9 +7,7 @@ import (
 	"time"
 
 	"github.com/avast/retry-go/v3"
-	"go.uber.org/zap"
-
-	"github.com/demeero/pocket-link/bricks/zaplogger"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -17,10 +15,10 @@ var (
 	ErrKeyNotFound    = errors.New("key not found")
 )
 
-// Key is a key for short link
+// Key is a key for short link.
 type Key struct {
-	Val       string
 	ExpiresAt time.Time
+	Val       string
 }
 
 // UnusedKeysRepository is a repository for unused keys.
@@ -40,23 +38,17 @@ type UsedKeysRepository interface {
 	Exists(context.Context, string) (bool, error)
 }
 
-// KeysConfig is a configuration for Keys
-type KeysConfig struct {
-	// TTL is a time to live for used keys
-	TTL time.Duration
-}
-
 // Keys is a service for generating keys.
 type Keys struct {
-	cfg    KeysConfig
 	used   UsedKeysRepository
 	unused UnusedKeysRepository
+	ttl    time.Duration
 }
 
 // New creates a new Keys.
-func New(cfg KeysConfig, used UsedKeysRepository, unused UnusedKeysRepository) *Keys {
+func New(ttl time.Duration, used UsedKeysRepository, unused UnusedKeysRepository) *Keys {
 	return &Keys{
-		cfg:    cfg,
+		ttl:    ttl,
 		used:   used,
 		unused: unused,
 	}
@@ -72,8 +64,8 @@ func (k *Keys) Use(ctx context.Context) (Key, error) {
 			return fmt.Errorf("failed load key: %w", err)
 		}
 
-		expiresAt := time.Now().Add(k.cfg.TTL)
-		stored, err := k.used.Store(ctx, loadedKey, k.cfg.TTL)
+		expiresAt := time.Now().Add(k.ttl)
+		stored, err := k.used.Store(ctx, loadedKey, k.ttl)
 		if err != nil {
 			return fmt.Errorf("failed store key: %w", err)
 		}
@@ -88,11 +80,11 @@ func (k *Keys) Use(ctx context.Context) (Key, error) {
 
 	retryCond := func(err error) bool {
 		if errors.Is(err, ErrKeyAlreadyUsed) {
-			zaplogger.From(ctx).Warn("expected free key is already in use - retry", zap.Error(err))
+			log.Ctx(ctx).Info().Msg("expected free key is already in use - retry")
 			return true
 		}
 		if errors.Is(err, ErrKeyNotFound) {
-			zaplogger.From(ctx).Warn("no free keys - retry", zap.Error(err))
+			log.Ctx(ctx).Info().Msg("no free keys - retry")
 			return true
 		}
 		return false

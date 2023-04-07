@@ -11,7 +11,7 @@ import (
 )
 
 type Controller struct {
-	pb.UnimplementedKeygenServiceServer
+	pb.KeygenServiceServer
 	k *key.Keys
 }
 

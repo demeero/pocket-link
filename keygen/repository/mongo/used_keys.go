@@ -11,8 +11,8 @@ import (
 )
 
 type key struct {
-	ID    string    `bson:"_id"`
 	ExpAt time.Time `bson:"exp_at"`
+	ID    string    `bson:"_id"`
 }
 
 type UsedKeys struct {

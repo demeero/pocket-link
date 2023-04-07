@@ -2,10 +2,12 @@ package key
 
 import (
 	"context"
-	"math/rand"
+	"crypto/rand"
+	"fmt"
+	"math/big"
 	"time"
 
-	"go.uber.org/zap"
+	"github.com/rs/zerolog/log"
 )
 
 var letterRunes = []rune("-_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -31,7 +33,7 @@ func Generate(ctx context.Context, cfg GeneratorConfig, used UsedKeysRepository,
 		case <-t.C:
 			size, err := unused.Size(ctx)
 			if err != nil {
-				zap.L().Error("failed get unused keys size", zap.Error(err))
+				log.Error().Err(err).Msg("failed get unused keys size")
 				continue
 			}
 			if size > int64(cfg.PredefinedKeysCount) {
@@ -45,34 +47,42 @@ func Generate(ctx context.Context, cfg GeneratorConfig, used UsedKeysRepository,
 
 func gen(ctx context.Context, n, keyLen int, used UsedKeysRepository, unused UnusedKeysRepository) {
 	for i := 0; i < n; {
-		rndKey := randStringRunes(keyLen, rand.New(rand.NewSource(time.Now().UnixNano())))
+		rndKey, err := randStringRunes(keyLen)
+		if err != nil {
+			log.Error().Err(err).Msg("failed get random string")
+			break
+		}
 		existed, err := used.Exists(ctx, rndKey)
 		if err != nil {
-			zap.L().Error("failed check used key existence", zap.Error(err))
+			log.Error().Err(err).Msg("failed check used key existence")
 			break
 		}
 		if existed {
-			zap.L().Debug("key already exists in used keys repository - try another one", zap.String("key", rndKey))
+			log.Debug().Msgf("key %s already exists in used keys repository - try another one", rndKey)
 			continue
 		}
 		stored, err := unused.Store(ctx, rndKey)
 		if err != nil {
-			zap.L().Error("failed store new key", zap.Error(err))
+			log.Error().Err(err).Msg("failed store new key")
 			break
 		}
 		if stored == 0 {
-			zap.L().Debug("key already exists in unused keys repository - try another one", zap.String("key", rndKey))
+			log.Debug().Msgf("key %s already exists in unused keys repository - try another one", rndKey)
 			continue
 		}
-		zap.L().Debug("stored new key", zap.String("key", rndKey))
+		log.Debug().Msgf("stored new key %s", rndKey)
 		i++
 	}
 }
 
-func randStringRunes(n int, rnd *rand.Rand) string {
+func randStringRunes(n int) (string, error) {
 	b := make([]rune, n)
 	for i := range b {
-		b[i] = letterRunes[rnd.Intn(len(letterRunes))]
+		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(letterRunes))))
+		if err != nil {
+			return "", fmt.Errorf("failed pick random letter: %w", err)
+		}
+		b[i] = letterRunes[idx.Int64()]
 	}
-	return string(b)
+	return string(b), nil
 }

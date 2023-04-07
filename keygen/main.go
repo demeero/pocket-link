@@ -3,22 +3,22 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/demeero/pocket-link/bricks/trace"
-	"github.com/demeero/pocket-link/bricks/zaplogger"
+	"github.com/demeero/pocket-link/keygen/controller/rpc/interceptor"
 	"github.com/go-redis/redis/v8"
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-	"github.com/kelseyhightower/envconfig"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -29,27 +29,26 @@ import (
 	"github.com/demeero/pocket-link/keygen/key"
 	mongorepo "github.com/demeero/pocket-link/keygen/repository/mongo"
 	redisrepo "github.com/demeero/pocket-link/keygen/repository/redis"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	logger, _, err := zaplogger.New(zaplogger.Config{Level: zap.DebugLevel})
-	if err != nil {
-		log.Fatal("failed init logger: ", err)
+	// Load environment variables from a `.env` file if one exists
+	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
+		log.Fatal().Err(err).Msg("failed load .env file")
 	}
 
-	var cfg config.Config
-	if err := envconfig.Process("", &cfg); err != nil {
-		logger.Fatal("failed process config: ", zap.Error(err))
-	}
-	logger.Sugar().Debugf("config: %+v", cfg)
+	cfg := config.New()
+	configureLogger(cfg.Log)
+	log.Debug().Any("value", cfg).Msg("parsed config")
 
 	if err := trace.Init(context.Background(), "keygen", cfg.Telemetry.Collector.Addr); err != nil {
-		logger.Fatal("error init tracing: ", zap.Error(err))
+		log.Fatal().Err(err).Msg("failed init tracing")
 	}
 
 	usedRepo, err := createUsedKeysRepo(cfg)
 	if err != nil {
-		logger.Fatal("failed create used keys repository", zap.Error(err))
+		log.Fatal().Err(err).Msg("failed create used keys repository")
 	}
 	unusedRepo := redisrepo.NewUnusedKeys(redis.NewClient(&redis.Options{
 		Addr: cfg.RedisUnusedKeys.Addr,
@@ -57,21 +56,32 @@ func main() {
 	}))
 
 	genCtx, genCancel := context.WithCancel(context.Background())
-	go key.Generate(genCtx, cfg.Generator, usedRepo, unusedRepo)
+	genCfg := key.GeneratorConfig{
+		PredefinedKeysCount: cfg.Generator.PredefinedKeysCount,
+		Delay:               cfg.Generator.Delay,
+		KeyLen:              cfg.Generator.KeyLen,
+	}
+	go key.Generate(genCtx, genCfg, usedRepo, unusedRepo)
 
-	grpcSrvShutdown := grpcServ(cfg.GRPC, key.New(cfg.Keys, usedRepo, unusedRepo))
+	grpcSrvShutdown := grpcServ(cfg.GRPC, key.New(cfg.Keys.TTL, usedRepo, unusedRepo))
 
+	waitForShutdown(cfg.ShutdownTimeout, func(context.Context) {
+		genCancel()
+		log.Info().Msg("start grpc srv shutdown")
+		grpcSrvShutdown()
+		log.Info().Msg("grpc srv finished")
+	})
+}
+
+func waitForShutdown(timeout time.Duration, shutdownFunc func(ctx context.Context)) {
 	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt)
+	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 	<-sigint
-
-	logger.Info("sig int received - start shutdown")
-	genCancel()
-	logger.Info("start grpc srv shutdown")
-	grpcSrvShutdown()
-	logger.Info("grpc srv finished")
-	logger.Info("shutdown completed")
-
+	log.Info().Msg("start shutdown")
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	shutdownFunc(ctx)
+	log.Info().Msg("shutdown completed")
 }
 
 func grpcServ(cfg config.GRPC, k *key.Keys) func() {
@@ -79,19 +89,22 @@ func grpcServ(cfg config.GRPC, k *key.Keys) func() {
 		grpcmiddleware.WithUnaryServerChain(
 			grpcrecovery.UnaryServerInterceptor(),
 			otelgrpc.UnaryServerInterceptor(),
-			zaplogger.GRPCUnaryServerInterceptor(),
+			interceptor.LogUnaryServerInterceptor(),
 		),
 	)
-	reflection.Register(grpcServ)
+	if cfg.EnableReflection {
+		reflection.Register(grpcServ)
+	}
 	pb.RegisterKeygenServiceServer(grpcServ, rpc.New(k))
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
 	if err != nil {
-		zap.L().Fatal("failed to listen GRPC port", zap.Error(err))
+		log.Fatal().Err(err).Msg("failed listen GRPC port")
 	}
 	go func() {
+		log.Info().Msg("init grpc srv")
 		if err := grpcServ.Serve(lis); err != nil {
-			zap.L().Fatal("failed serve GRPC", zap.Error(err))
+			log.Fatal().Err(err).Msg("failed serve GRPC")
 		}
 	}()
 	return func() {
@@ -120,4 +133,22 @@ func createUsedKeysRepo(cfg config.Config) (key.UsedKeysRepository, error) {
 	default:
 		return nil, fmt.Errorf("unsupported used keys repository type: %s", cfg.UsedKeysRepositoryType)
 	}
+}
+
+func configureLogger(cfg config.Log) {
+	if cfg.UnixTimestamp {
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	}
+	if cfg.Pretty {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339})
+	}
+	if cfg.Caller {
+		log.Logger = log.Logger.With().Caller().Logger()
+	}
+	zerolog.DefaultContextLogger = &log.Logger
+	level, err := zerolog.ParseLevel(cfg.Level)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed parse log level")
+	}
+	zerolog.SetGlobalLevel(level)
 }

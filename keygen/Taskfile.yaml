@@ -1,0 +1,44 @@
+version: "3"
+
+tasks:
+
+  lint:go:
+    desc: Run Go linters
+    cmds:
+      - go install golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignment@latest
+      - cmd: fieldalignment -test=false -fix=true $(PWD)/...
+        ignore_error: true
+      - docker run --rm -v ${PWD}:/app -w /app golangci/golangci-lint:v1.51.2-alpine golangci-lint run -v --fix --timeout=420s -c golangci.yml
+
+  lint:dockerfile:
+    desc: Run Dockerfile linters
+    cmds:
+      - docker run --rm -i hadolint/hadolint:v2.12.0-alpine < Dockerfile
+
+  build:bin:
+    desc: Build binary file
+    cmds:
+      - CGO_ENABLED=0 go build -o $(PWD)/bin/keygen main.go
+
+  build:docker:
+    desc: Build docker image
+    cmds:
+      - docker build -t pocket-link-keygen:local .
+
+  run:
+    desc: Run keygen app
+    cmds:
+      - docker compose -f docker-compose.dev.yaml up -d --build
+      - docker compose -f docker-compose.dev.yaml logs -f keygen
+
+  stop:
+    desc: Stop keygen app
+    cmds:
+      - docker compose -f docker-compose.dev.yaml down
+
+  test:
+    desc: Run tests in docker container.
+    cmds:
+      - go test -short -count 1 -race -v ./...
+
+

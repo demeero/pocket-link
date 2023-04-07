@@ -1,0 +1,51 @@
+version: "3.9"
+services:
+
+  keygen:
+    image: pocket-link-keygen:local
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.43
+    expose:
+      - "16686"
+      - "14250"
+    ports:
+      - "16686:16686"
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.75.0
+    command: [ "--config=/etc/otel-collector-config.yaml", "--log-level=info" ]
+    expose:
+      - "55681" # HTTP otel receiver
+      - "8889" # Prometheus exporter metrics
+      - "16686" # Dashboard
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+
+  redis:
+    image: redis:7-alpine3.17
+    restart: always
+    ports:
+      - "6479:6379"
+
+  redis-lru:
+    image: redis:7-alpine3.17
+    restart: always
+    command: [ "--port 6380", "--maxmemory 2mb", "--maxmemory-policy allkeys-lru" ]
+    ports:
+      - "6480:6380"
+
+  mongo:
+    image: mongo:6
+    restart: always
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:

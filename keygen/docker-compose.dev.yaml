@@ -1,0 +1,30 @@
+version: "3.9"
+services:
+
+  keygen:
+    build:
+      dockerfile: dev.Dockerfile
+    container_name: keygen
+    volumes:
+      - ./:/workdir
+    ports:
+      - "8080:8080"
+
+  redis:
+    container_name: redis-keygen
+    image: redis:6.0.9-alpine3.12
+    restart: always
+    ports:
+      - "6479:6379"
+
+  mongo:
+    container_name: mongo-keygen
+    image: mongo
+    restart: always
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo-keygen-data:/data/db
+
+volumes:
+  mongo-keygen-data:

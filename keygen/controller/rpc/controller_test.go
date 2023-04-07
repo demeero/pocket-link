@@ -24,7 +24,7 @@ func TestController_GenerateKey(t *testing.T) {
 
 	unusedRepo.EXPECT().LoadAndDelete(ctx).Return(testKey, nil)
 	usedRepo.EXPECT().Store(ctx, testKey, gomock.Any()).Return(true, nil)
-	keys := key.New(key.KeysConfig{TTL: time.Hour}, usedRepo, unusedRepo)
+	keys := key.New(time.Hour, usedRepo, unusedRepo)
 
 	c := New(keys)
 
@@ -46,11 +46,11 @@ func TestController_GenerateKey_Err(t *testing.T) {
 	unusedRepo.EXPECT().LoadAndDelete(ctx).Return(testKey, nil)
 	testErr := errors.New("test err")
 	usedRepo.EXPECT().Store(ctx, testKey, gomock.Any()).Return(false, testErr)
-	keys := key.New(key.KeysConfig{TTL: time.Hour}, usedRepo, unusedRepo)
+	keys := key.New(time.Hour, usedRepo, unusedRepo)
 
 	c := New(keys)
 
 	actual, err := c.GenerateKey(ctx, &pb.GenerateKeyRequest{})
 	assert.Nil(t, actual)
-	assert.EqualError(t, err, testErr.Error())
+	assert.ErrorContains(t, err, testErr.Error())
 }

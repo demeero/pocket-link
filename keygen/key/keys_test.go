@@ -21,7 +21,7 @@ func TestKeys_Use(t *testing.T) {
 
 	unusedRepo.EXPECT().LoadAndDelete(ctx).Return(testKey, nil)
 	usedRepo.EXPECT().Store(ctx, testKey, gomock.Any()).Return(true, nil)
-	keys := New(KeysConfig{TTL: time.Hour}, usedRepo, unusedRepo)
+	keys := New(time.Hour, usedRepo, unusedRepo)
 
 	actual, err := keys.Use(ctx)
 	assert.Equal(t, testKey, actual.Val)
@@ -39,11 +39,11 @@ func TestKeys_Use_LoadAndDeleteUnexpectedErr(t *testing.T) {
 	testErr := errors.New("test err")
 
 	unusedRepo.EXPECT().LoadAndDelete(ctx).Return("", testErr)
-	keys := New(KeysConfig{TTL: time.Hour}, usedRepo, unusedRepo)
+	keys := New(time.Hour, usedRepo, unusedRepo)
 
 	actual, err := keys.Use(ctx)
 	assert.Zero(t, actual)
-	assert.EqualError(t, err, testErr.Error())
+	assert.ErrorContains(t, err, testErr.Error())
 }
 
 func TestKeys_Use_StoreUnexpectedErr(t *testing.T) {
@@ -58,11 +58,11 @@ func TestKeys_Use_StoreUnexpectedErr(t *testing.T) {
 
 	unusedRepo.EXPECT().LoadAndDelete(ctx).Return(testKey, nil)
 	usedRepo.EXPECT().Store(ctx, testKey, gomock.Any()).Return(false, testErr)
-	keys := New(KeysConfig{TTL: time.Hour}, usedRepo, unusedRepo)
+	keys := New(time.Hour, usedRepo, unusedRepo)
 
 	actual, err := keys.Use(ctx)
 	assert.Zero(t, actual)
-	assert.EqualError(t, err, testErr.Error())
+	assert.Error(t, err, testErr.Error())
 }
 
 func TestKeys_Use_NoFreeKeys_Retry(t *testing.T) {
@@ -77,7 +77,7 @@ func TestKeys_Use_NoFreeKeys_Retry(t *testing.T) {
 	unusedRepo.EXPECT().LoadAndDelete(ctx).Return("", ErrKeyNotFound)
 	unusedRepo.EXPECT().LoadAndDelete(ctx).Return(testKey, nil)
 	usedRepo.EXPECT().Store(ctx, testKey, gomock.Any()).Return(true, nil)
-	keys := New(KeysConfig{TTL: time.Hour}, usedRepo, unusedRepo)
+	keys := New(time.Hour, usedRepo, unusedRepo)
 
 	actual, err := keys.Use(ctx)
 	assert.Equal(t, testKey, actual.Val)
@@ -99,7 +99,7 @@ func TestKeys_Use_KeyAlreadyUsed_Retry(t *testing.T) {
 	unusedRepo.EXPECT().LoadAndDelete(ctx).Return(testKey2, nil)
 	usedRepo.EXPECT().Store(ctx, testKey1, gomock.Any()).Return(false, nil)
 	usedRepo.EXPECT().Store(ctx, testKey2, gomock.Any()).Return(true, nil)
-	keys := New(KeysConfig{TTL: time.Hour}, usedRepo, unusedRepo)
+	keys := New(time.Hour, usedRepo, unusedRepo)
 
 	actual, err := keys.Use(ctx)
 	assert.Equal(t, testKey2, actual.Val)
@@ -119,7 +119,7 @@ func TestKeys_Use_CancelCtx(t *testing.T) {
 		cancel()
 		return "", ErrKeyNotFound
 	})
-	keys := New(KeysConfig{TTL: time.Hour}, usedRepo, unusedRepo)
+	keys := New(time.Hour, usedRepo, unusedRepo)
 
 	actual, err := keys.Use(ctx)
 	assert.Zero(t, actual)
