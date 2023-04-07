@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/demeero/pocket-link/bricks/trace"
@@ -15,7 +17,6 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -33,12 +34,12 @@ import (
 func main() {
 	logger, _, err := zaplogger.New(zaplogger.Config{Level: zap.DebugLevel})
 	if err != nil {
-		log.Fatal("error init logger: ", err)
+		log.Fatal("failed init logger: ", err)
 	}
 
 	var cfg config.Config
 	if err := envconfig.Process("", &cfg); err != nil {
-		logger.Fatal("error process config: ", zap.Error(err))
+		logger.Fatal("failed process config: ", zap.Error(err))
 	}
 	logger.Sugar().Debugf("config: %+v", cfg)
 
@@ -48,19 +49,32 @@ func main() {
 
 	usedRepo, err := createUsedKeysRepo(cfg)
 	if err != nil {
-		logger.Fatal("error create used keys repository", zap.Error(err))
+		logger.Fatal("failed create used keys repository", zap.Error(err))
 	}
 	unusedRepo := redisrepo.NewUnusedKeys(redis.NewClient(&redis.Options{
 		Addr: cfg.RedisUnusedKeys.Addr,
 		DB:   int(cfg.RedisUnusedKeys.DB),
 	}))
 
-	go key.Generate(context.Background(), cfg.Generator, usedRepo, unusedRepo)
+	genCtx, genCancel := context.WithCancel(context.Background())
+	go key.Generate(genCtx, cfg.Generator, usedRepo, unusedRepo)
 
-	grpcServ(cfg.GRPC, key.New(cfg.Keys, usedRepo, unusedRepo))
+	grpcSrvShutdown := grpcServ(cfg.GRPC, key.New(cfg.Keys, usedRepo, unusedRepo))
+
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, os.Interrupt)
+	<-sigint
+
+	logger.Info("sig int received - start shutdown")
+	genCancel()
+	logger.Info("start grpc srv shutdown")
+	grpcSrvShutdown()
+	logger.Info("grpc srv finished")
+	logger.Info("shutdown completed")
+
 }
 
-func grpcServ(cfg config.GRPC, k *key.Keys) {
+func grpcServ(cfg config.GRPC, k *key.Keys) func() {
 	grpcServ := grpc.NewServer(
 		grpcmiddleware.WithUnaryServerChain(
 			grpcrecovery.UnaryServerInterceptor(),
@@ -75,8 +89,13 @@ func grpcServ(cfg config.GRPC, k *key.Keys) {
 	if err != nil {
 		zap.L().Fatal("failed to listen GRPC port", zap.Error(err))
 	}
-	if err := grpcServ.Serve(lis); err != nil {
-		zap.L().Fatal("failed to serve GRPC", zap.Error(err))
+	go func() {
+		if err := grpcServ.Serve(lis); err != nil {
+			zap.L().Fatal("failed serve GRPC", zap.Error(err))
+		}
+	}()
+	return func() {
+		grpcServ.GracefulStop()
 	}
 }
 
@@ -90,10 +109,7 @@ func createUsedKeysRepo(cfg config.Config) (key.UsedKeysRepository, error) {
 		defer cancel()
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.MongoUsedKeys.URI))
 		if err != nil {
-			return nil, err
-		}
-		if err = client.Ping(ctx, readpref.Primary()); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed connect to MongoDB: %w", err)
 		}
 		return mongorepo.NewUsedKeys(client.Database("pocket-link"))
 	case config.UsedKeysRepositoryTypeRedis:

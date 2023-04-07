@@ -61,7 +61,7 @@ func (l *Links) lookup(ctx context.Context, shortened string) (string, error) {
 		err := l.rds.SetArgs(ctx, shortened, res.GetOriginal(), redis.SetArgs{ExpireAt: res.GetExpireTime().AsTime()}).Err()
 		if err != nil {
 			zaplogger.From(ctx).Error("error put shortened link to LRU cache",
-				zap.String("shortened", shortened), zap.String("original", original))
+				zap.String("shortened", shortened), zap.String("original", original), zap.Error(err))
 		}
 	}()
 	return res.GetOriginal(), nil
