@@ -14,10 +14,10 @@ import (
 )
 
 type linkMongo struct {
-	ID        string    `bson:"_id"`
-	Original  string    `bson:"original"`
 	CreatedAt time.Time `bson:"created_at"`
 	ExpAt     time.Time `bson:"exp_at"`
+	ID        string    `bson:"_id"`
+	Original  string    `bson:"original"`
 }
 
 type Repository struct {

@@ -3,34 +3,45 @@ package rest
 import (
 	"errors"
 	"net/http"
+	"strings"
 
-	"github.com/demeero/pocket-link/bricks/zaplogger"
-
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
-	"go.uber.org/zap"
+	"github.com/demeero/pocket-link/links/controller/rest/middleware"
+	"github.com/rs/zerolog/log"
 
 	"github.com/demeero/pocket-link/links/service"
+	"github.com/labstack/echo/v4"
+	echomw "github.com/labstack/echo/v4/middleware"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 )
 
 type createLink struct {
 	Original string `json:"original,omitempty"`
 }
 
-func New(s *service.Service) http.Handler {
-	e := echo.New()
+func Setup(e *echo.Echo, s *service.Service) {
 	middlewares(e)
-	g := e.Group("/api/v1/links")
-	g.POST("/", create(s))
-	return e
+	apiGroup := e.Group("/api")
+	linksGroup := apiGroup.Group("/links")
+	linksGroup.POST("", create(s))
+
+	for _, r := range e.Routes() {
+		if r == nil || !strings.Contains(r.Name, "links") {
+			continue
+		}
+		log.Info().
+			Str("method", r.Method).
+			Str("path", r.Path).
+			Str("name", r.Name).
+			Msg("registered routes")
+	}
 }
 
 func middlewares(e *echo.Echo) {
-	e.Pre(middleware.AddTrailingSlash())
-	e.Use(middleware.CORS())
+	e.Pre(echomw.RemoveTrailingSlash())
+	e.Use(middleware.Recover())
 	e.Use(otelecho.Middleware("links"))
-	e.Use(zaplogger.EchoMiddleware(zap.L()))
+	e.Use(middleware.Ctx())
+	e.Use(middleware.Log())
 }
 
 func create(s *service.Service) echo.HandlerFunc {

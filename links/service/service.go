@@ -17,10 +17,10 @@ var (
 )
 
 type Link struct {
-	Shortened string    `json:"shortened,omitempty"`
-	Original  string    `json:"original,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	ExpAt     time.Time `json:"exp_at"`
+	Shortened string    `json:"shortened,omitempty"`
+	Original  string    `json:"original,omitempty"`
 }
 
 type Repository interface {
@@ -42,19 +42,27 @@ func New(repo Repository, kc keygenpb.KeygenServiceClient) *Service {
 
 func (s *Service) Create(ctx context.Context, original string) (Link, error) {
 	if !govalidator.IsURL(original) {
-		return Link{}, fmt.Errorf("%w: invalid url: %s", ErrInvalid, original)
+		return Link{}, fmt.Errorf("%w: incorrect url format: %s", ErrInvalid, original)
 	}
 	resp, err := s.keygenClient.GenerateKey(ctx, &keygenpb.GenerateKeyRequest{})
 	if err != nil {
-		return Link{}, err
+		return Link{}, fmt.Errorf("failed generate key: %w", err)
 	}
-	return s.repo.Create(ctx, Link{
+	link, err := s.repo.Create(ctx, Link{
 		Shortened: resp.GetKey().GetVal(),
 		Original:  original,
 		ExpAt:     resp.GetKey().GetExpireTime().AsTime(),
 	})
+	if err != nil {
+		return Link{}, fmt.Errorf("failed create link: %w", err)
+	}
+	return link, nil
 }
 
 func (s *Service) Get(ctx context.Context, shortened string) (Link, error) {
-	return s.repo.LoadByID(ctx, shortened)
+	link, err := s.repo.LoadByID(ctx, shortened)
+	if err != nil {
+		return Link{}, fmt.Errorf("failed load link: %w", err)
+	}
+	return link, nil
 }

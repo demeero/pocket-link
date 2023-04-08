@@ -2,7 +2,7 @@ version: "3"
 
 env:
   DOCKER_REPO: demeero
-  IMAGE_NAME: pocket-link-keygen
+  IMAGE_NAME: pocket-link-links
   GIT_HASH: $(git rev-parse --short HEAD)
 
 tasks:
@@ -23,16 +23,16 @@ tasks:
   build:bin:
     desc: Build binary file
     cmds:
-      - CGO_ENABLED=0 go build -o $(PWD)/bin/keygen main.go
+      - CGO_ENABLED=0 go build -o $(PWD)/bin/links main.go
 
   run:
-    desc: Run keygen app
+    desc: Run links app
     cmds:
       - docker compose -f docker-compose.dev.yaml up -d --build
-      - docker compose -f docker-compose.dev.yaml logs -f keygen
+      - docker compose -f docker-compose.dev.yaml logs -f links
 
   stop:
-    desc: Stop keygen app
+    desc: Stop links app
     cmds:
       - docker compose -f docker-compose.dev.yaml down
 

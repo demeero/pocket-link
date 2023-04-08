@@ -2,11 +2,19 @@ version: "3.9"
 services:
 
   keygen:
-    image: pocket-link-keygen:local
+    image: demeero/pocket-link-keygen
     env_file:
-      - .env
+      - keygen.env
     ports:
       - "8080:8080"
+
+  links:
+    image: demeero/pocket-link-links
+    env_file:
+      - links.env
+    ports:
+      - "8081:8080"
+      - "8082:8081"
 
   jaeger:
     image: jaegertracing/all-in-one:1.43

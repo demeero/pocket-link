@@ -83,7 +83,7 @@ func TestService_Create_KeygenClientErr(t *testing.T) {
 	svc := New(mockRepo, mockKGCli)
 
 	actual, err := svc.Create(ctx, orig)
-	assert.EqualError(t, err, testErr.Error())
+	assert.ErrorContains(t, err, testErr.Error())
 	assert.Zero(t, actual)
 }
 
@@ -113,7 +113,7 @@ func TestService_Create_RepoErr(t *testing.T) {
 	svc := New(mockRepo, mockKGCli)
 
 	actual, err := svc.Create(ctx, orig)
-	assert.EqualError(t, err, testErr.Error())
+	assert.ErrorContains(t, err, testErr.Error())
 	assert.Zero(t, actual)
 }
 
@@ -158,6 +158,6 @@ func TestService_Get_RepoErr(t *testing.T) {
 	svc := New(mockRepo, mockKGCli)
 
 	actual, err := svc.Get(ctx, short)
-	assert.EqualError(t, err, testErr.Error())
+	assert.ErrorContains(t, err, testErr.Error())
 	assert.Zero(t, actual)
 }

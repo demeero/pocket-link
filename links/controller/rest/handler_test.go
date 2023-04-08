@@ -88,5 +88,5 @@ func Test_create_InvalidBody(t *testing.T) {
 	c := e.NewContext(req, rec)
 
 	err = create(service.New(mockRepo, mockKGCli))(c)
-	assert.Equal(t, err, echo.NewHTTPError(http.StatusBadRequest, "invalid data: invalid url: blabla_url"))
+	assert.Equal(t, err, echo.NewHTTPError(http.StatusBadRequest, "invalid data: incorrect url format: blabla_url"))
 }
