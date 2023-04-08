@@ -1,0 +1,8 @@
+bin
+README.md
+.idea
+.test
+.gitignore
+Dockerfile
+golangci.yml
+Taskfile.yaml

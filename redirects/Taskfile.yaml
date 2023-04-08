@@ -1,0 +1,46 @@
+version: "3"
+
+env:
+  DOCKER_REPO: demeero
+  IMAGE_NAME: pocket-link-redirects
+  GIT_HASH: $(git rev-parse --short HEAD)
+
+tasks:
+
+  lint:go:
+    desc: Run Go linters
+    cmds:
+      - go install golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignment@latest
+      - cmd: fieldalignment -test=false -fix=true $(PWD)/...
+        ignore_error: true
+      - docker run --rm -v ${PWD}:/app -w /app golangci/golangci-lint:v1.51.2-alpine golangci-lint run -v --fix --timeout=420s -c golangci.yml
+
+  lint:dockerfile:
+    desc: Run Dockerfile linters
+    cmds:
+      - docker run --rm -i hadolint/hadolint:v2.12.0-alpine < Dockerfile
+
+  build:bin:
+    desc: Build binary file
+    cmds:
+      - CGO_ENABLED=0 go build -o $(PWD)/bin/redirects main.go
+
+  test:
+    desc: Run tests in docker container.
+    cmds:
+      - go test -count 1 -race -v ./...
+
+  image:build:
+    desc: Build docker image
+    cmds:
+      - docker build -t {{.IMAGE_NAME}}:{{.GIT_HASH}} .
+
+  image:push:
+    desc: Push docker image
+    cmds:
+      - docker login -- {{.CLI_ARGS}}
+      - docker tag {{.IMAGE_NAME}}:{{.GIT_HASH}} {{.DOCKER_REPO}}/{{.IMAGE_NAME}}:{{.GIT_HASH}}
+      - docker tag {{.IMAGE_NAME}}:{{.GIT_HASH}} {{.DOCKER_REPO}}/{{.IMAGE_NAME}}:latest
+      - docker push {{.DOCKER_REPO}}/{{.IMAGE_NAME}}:{{.GIT_HASH}}
+      - docker push {{.DOCKER_REPO}}/{{.IMAGE_NAME}}:latest
+

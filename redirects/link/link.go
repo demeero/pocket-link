@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/demeero/pocket-link/bricks/zaplogger"
 	linkpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
+	"github.com/rs/zerolog/log"
 
 	"github.com/go-redis/redis/v8"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -50,8 +49,11 @@ func (l *Links) lookup(ctx context.Context, shortened string) (string, error) {
 		return original, nil
 	}
 	if !errors.Is(err, redis.Nil) {
-		zaplogger.From(ctx).Error("error get link from LRU cache",
-			zap.String("shortened", shortened), zap.String("original", original), zap.Error(err))
+		log.Ctx(ctx).Error().
+			Err(err).
+			Str("shortened", shortened).
+			Str("original", original).
+			Msg("failed get link from LRU cache")
 	}
 	res, err := l.lookupFromLinkService(ctx, shortened)
 	if err != nil {
@@ -60,8 +62,11 @@ func (l *Links) lookup(ctx context.Context, shortened string) (string, error) {
 	go func() {
 		err := l.rds.SetArgs(ctx, shortened, res.GetOriginal(), redis.SetArgs{ExpireAt: res.GetExpireTime().AsTime()}).Err()
 		if err != nil {
-			zaplogger.From(ctx).Error("error put shortened link to LRU cache",
-				zap.String("shortened", shortened), zap.String("original", original), zap.Error(err))
+			log.Ctx(ctx).Error().
+				Err(err).
+				Str("shortened", shortened).
+				Str("original", original).
+				Msg("failed put link to LRU cache")
 		}
 	}()
 	return res.GetOriginal(), nil

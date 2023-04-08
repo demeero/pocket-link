@@ -5,26 +5,25 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/demeero/pocket-link/bricks/zaplogger"
+	"github.com/demeero/pocket-link/redirects/handler/middleware"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	echomw "github.com/labstack/echo/v4/middleware"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
-	"go.uber.org/zap"
 
 	"github.com/demeero/pocket-link/redirects/link"
 )
 
-func New(links *link.Links) http.Handler {
-	e := echo.New()
+func Setup(e *echo.Echo, links *link.Links) {
 	middlewares(e)
 	e.Any("/*", redirect(links))
-	return e
 }
 
 func middlewares(e *echo.Echo) {
-	e.Pre(middleware.AddTrailingSlash())
+	e.Pre(echomw.RemoveTrailingSlash())
+	e.Use(middleware.Recover())
 	e.Use(otelecho.Middleware("redirects"))
-	e.Use(zaplogger.EchoMiddleware(zap.L()))
+	e.Use(middleware.Ctx())
+	e.Use(middleware.Log())
 }
 
 func redirect(links *link.Links) echo.HandlerFunc {

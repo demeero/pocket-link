@@ -1,0 +1,8 @@
+bin
+.idea
+.DS_Store
+tmp
+*.log
+
+# Test binary, built with `go test -c`
+*.test

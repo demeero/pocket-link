@@ -16,6 +16,13 @@ services:
       - "8081:8080"
       - "8082:8081"
 
+  redirects:
+    image: demeero/pocket-link-redirects
+    env_file:
+      - redirects.env
+    ports:
+      - "8083:8080"
+
   jaeger:
     image: jaegertracing/all-in-one:1.43
     expose:
