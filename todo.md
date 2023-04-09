@@ -8,3 +8,4 @@
 - visualize tracing
 - re-write frontend
 - github actions
+- remove cors middleware from internal services and move it to gateway

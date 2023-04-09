@@ -166,7 +166,7 @@
         }
 
         // TODO remove hardcode
-        fetch('http://localhost:8085/api/v1/links', {
+        fetch('http://localhost:8081/api/links', {
             method: 'POST', // *GET, POST, PUT, DELETE, etc.
             headers: {'Content-Type': 'application/json'},
             mode: 'cors',
@@ -182,7 +182,7 @@
             const lt = document.createTextNode(data.shortened);
             l.appendChild(lt);
             l.title = data.shortened;
-            l.href = "http://localhost:8087/" + data.shortened; // TODO add host on backend side
+            l.href = "http://localhost:8083/" + data.shortened; // TODO add host on backend side
 
             li.appendChild(l);
             document.getElementById("link-list").appendChild(li);

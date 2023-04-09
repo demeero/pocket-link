@@ -1,0 +1,28 @@
+version: "3"
+
+env:
+  DOCKER_REPO: demeero
+  IMAGE_NAME: pocket-link-frontend
+  GIT_HASH: $(git rev-parse --short HEAD)
+
+tasks:
+
+  lint:dockerfile:
+    desc: Run Dockerfile linters
+    cmds:
+      - docker run --rm -i hadolint/hadolint:v2.12.0-alpine < Dockerfile
+
+  image:build:
+    desc: Build docker image
+    cmds:
+      - docker build -t {{.IMAGE_NAME}}:{{.GIT_HASH}} .
+
+  image:push:
+    desc: Push docker image
+    cmds:
+      - docker login -- {{.CLI_ARGS}}
+      - docker tag {{.IMAGE_NAME}}:{{.GIT_HASH}} {{.DOCKER_REPO}}/{{.IMAGE_NAME}}:{{.GIT_HASH}}
+      - docker tag {{.IMAGE_NAME}}:{{.GIT_HASH}} {{.DOCKER_REPO}}/{{.IMAGE_NAME}}:latest
+      - docker push {{.DOCKER_REPO}}/{{.IMAGE_NAME}}:{{.GIT_HASH}}
+      - docker push {{.DOCKER_REPO}}/{{.IMAGE_NAME}}:latest
+

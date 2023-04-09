@@ -47,7 +47,7 @@ func main() {
 		log.Fatal().Err(err).Msg("error create grpc links connection")
 	}
 
-	l := link.New(linkpb.NewLinkServiceClient(conn), redis.NewClient(&redis.Options{Addr: cfg.RedisLRU.Addr}))
+	l := link.New(linkpb.NewLinkServiceClient(conn), redis.NewClient(&redis.Options{Addr: cfg.RedisLRU.Addr, DB: int(cfg.RedisLRU.DB)}))
 	httpShutdown := httpSrv(cfg.HTTP, l)
 
 	waitForShutdown(cfg.ShutdownTimeout, func(ctx context.Context) {

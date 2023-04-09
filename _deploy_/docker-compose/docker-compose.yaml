@@ -23,6 +23,11 @@ services:
     ports:
       - "8083:8080"
 
+  frontend:
+    image: demeero/pocket-link-frontend
+    ports:
+      - "8084:80"
+
   jaeger:
     image: jaegertracing/all-in-one:1.43
     expose:
