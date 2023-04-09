@@ -3,17 +3,18 @@ package config
 import (
 	"time"
 
+	"github.com/demeero/pocket-link/bricks"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rs/zerolog/log"
 )
 
 type Config struct {
-	Links           LinksClient   `json:"links"`
-	Telemetry       Telemetry     `json:"telemetry"`
-	Log             Log           `json:"log"`
-	RedisLRU        RedisLRU      `json:"redis_lru" split_words:"true"`
-	HTTP            HTTP          `json:"http"`
-	ShutdownTimeout time.Duration `default:"10s" split_words:"true" json:"shutdown_timeout"`
+	Links           LinksClient      `json:"links"`
+	Telemetry       Telemetry        `json:"telemetry"`
+	Log             bricks.LogConfig `json:"log"`
+	RedisLRU        RedisLRU         `json:"redis_lru" split_words:"true"`
+	HTTP            HTTP             `json:"http"`
+	ShutdownTimeout time.Duration    `default:"10s" split_words:"true" json:"shutdown_timeout"`
 }
 
 // New creates a new Config.
@@ -23,18 +24,6 @@ func New() Config {
 		log.Fatal().Err(err).Msg("failed process config")
 	}
 	return cfg
-}
-
-// Log represents the log configuration.
-type Log struct {
-	// Level is the log level. "disabled" value disables logging.
-	Level string `default:"debug" json:"log_level"`
-	// Pretty enables human-friendly, colorized output instead of JSON.
-	Pretty bool `json:"pretty"`
-	// Caller adds file and line number to log.
-	Caller bool `default:"true" json:"caller"`
-	// UnixTimestamp enables unix timestamp in log instead of human-readable timestamps.
-	UnixTimestamp bool `default:"true" json:"unix_timestamp"`
 }
 
 // HTTP is a configuration for HTTP server.

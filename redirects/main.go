@@ -10,12 +10,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/demeero/pocket-link/bricks"
 	"github.com/demeero/pocket-link/bricks/trace"
 	linkpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	echolog "github.com/labstack/gommon/log"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -35,7 +35,7 @@ func main() {
 	}
 
 	cfg := config.New()
-	configureLogger(cfg.Log)
+	bricks.ConfigureLogger(cfg.Log)
 	log.Debug().Any("value", cfg).Msg("parsed config")
 
 	if err := trace.Init(context.Background(), "redirects", cfg.Telemetry.Collector.Addr); err != nil {
@@ -92,22 +92,4 @@ func httpSrv(cfg config.HTTP, l *link.Links) func(ctx context.Context) {
 			log.Error().Err(err).Msg("failed shutdown http srv")
 		}
 	}
-}
-
-func configureLogger(cfg config.Log) {
-	if cfg.UnixTimestamp {
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	}
-	if cfg.Pretty {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339})
-	}
-	if cfg.Caller {
-		log.Logger = log.Logger.With().Caller().Logger()
-	}
-	zerolog.DefaultContextLogger = &log.Logger
-	level, err := zerolog.ParseLevel(cfg.Level)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed parse log level")
-	}
-	zerolog.SetGlobalLevel(level)
 }

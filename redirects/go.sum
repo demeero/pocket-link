@@ -25,8 +25,8 @@ github.com/coreos/go-systemd/v22 v22.3.3-0.20220203105225-a9a7ef127534/go.mod h1
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/demeero/pocket-link/bricks v0.0.0-20210623211941-2ffed6921ef5 h1:nvZdzKXN92O9IgCr8MstapOlxHbxUzYGRKDcx/qzQ/w=
-github.com/demeero/pocket-link/bricks v0.0.0-20210623211941-2ffed6921ef5/go.mod h1:54mB6mb6P2ENZoGiVGsmFNioiv6iFhh4CaJ9SMK30WM=
+github.com/demeero/pocket-link/bricks v0.0.0-20230409002023-1df44fdf4e3b h1:7F/JIYCgEEVSa59OL0cUcHd6nacaoOc+Cf1U+ECv4Jg=
+github.com/demeero/pocket-link/bricks v0.0.0-20230409002023-1df44fdf4e3b/go.mod h1:P5xBfdDu46twZcdHQEKfWMfXYvhh9FnQqrUIqiY7ef8=
 github.com/demeero/pocket-link/proto/gen/go v0.0.0-20210623125708-5227b6f1e5a1 h1:zNdeUG7RgcMlbXdT9CWoAN+rgQCUOub9QMN7ClPU3JA=
 github.com/demeero/pocket-link/proto/gen/go v0.0.0-20210623125708-5227b6f1e5a1/go.mod h1:podYehWV93iy7HLpRjDGNxX6k6n8sIpdIhfDSDCji5M=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
