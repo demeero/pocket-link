@@ -9,12 +9,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/demeero/pocket-link/bricks"
 	"github.com/demeero/pocket-link/bricks/trace"
 	"github.com/demeero/pocket-link/keygen/controller/rpc/interceptor"
 	"github.com/go-redis/redis/v8"
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -39,7 +39,7 @@ func main() {
 	}
 
 	cfg := config.New()
-	configureLogger(cfg.Log)
+	bricks.ConfigureLogger(cfg.Log)
 	log.Debug().Any("value", cfg).Msg("parsed config")
 
 	if err := trace.Init(context.Background(), "keygen", cfg.Telemetry.Collector.Addr); err != nil {
@@ -133,22 +133,4 @@ func createUsedKeysRepo(cfg config.Config) (key.UsedKeysRepository, error) {
 	default:
 		return nil, fmt.Errorf("unsupported used keys repository type: %s", cfg.UsedKeysRepositoryType)
 	}
-}
-
-func configureLogger(cfg config.Log) {
-	if cfg.UnixTimestamp {
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	}
-	if cfg.Pretty {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339})
-	}
-	if cfg.Caller {
-		log.Logger = log.Logger.With().Caller().Logger()
-	}
-	zerolog.DefaultContextLogger = &log.Logger
-	level, err := zerolog.ParseLevel(cfg.Level)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed parse log level")
-	}
-	zerolog.SetGlobalLevel(level)
 }
