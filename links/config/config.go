@@ -3,19 +3,20 @@ package config
 import (
 	"time"
 
+	"github.com/demeero/pocket-link/bricks"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rs/zerolog/log"
 )
 
 // Config represents the configuration of application.
 type Config struct {
-	Telemetry       Telemetry     `json:"telemetry"`
-	Mongo           Mongo         `json:"mongo"`
-	Keygen          KeygenClient  `json:"keygen"`
-	Log             Log           `json:"log"`
-	HTTP            HTTP          `json:"http"`
-	GRPC            GRPC          `json:"grpc"`
-	ShutdownTimeout time.Duration `default:"10s" split_words:"true" json:"shutdown_timeout"`
+	Telemetry       Telemetry        `json:"telemetry"`
+	Mongo           Mongo            `json:"mongo"`
+	Keygen          KeygenClient     `json:"keygen"`
+	Log             bricks.LogConfig `json:"log"`
+	HTTP            HTTP             `json:"http"`
+	GRPC            GRPC             `json:"grpc"`
+	ShutdownTimeout time.Duration    `default:"10s" split_words:"true" json:"shutdown_timeout"`
 }
 
 // New creates a new Config.
@@ -25,18 +26,6 @@ func New() Config {
 		log.Fatal().Err(err).Msg("failed process config")
 	}
 	return cfg
-}
-
-// Log represents the log configuration.
-type Log struct {
-	// Level is the log level. "disabled" value disables logging.
-	Level string `default:"debug" json:"log_level"`
-	// Pretty enables human-friendly, colorized output instead of JSON.
-	Pretty bool `json:"pretty"`
-	// Caller adds file and line number to log.
-	Caller bool `default:"true" json:"caller"`
-	// UnixTimestamp enables unix timestamp in log instead of human-readable timestamps.
-	UnixTimestamp bool `default:"true" json:"unix_timestamp"`
 }
 
 // HTTP is a configuration for HTTP server.

@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/demeero/pocket-link/bricks"
 	"github.com/demeero/pocket-link/bricks/trace"
 	"github.com/demeero/pocket-link/links/config"
 	"github.com/demeero/pocket-link/links/controller/rest"
@@ -26,7 +27,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	echolog "github.com/labstack/gommon/log"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -42,7 +42,7 @@ func main() {
 	}
 
 	cfg := config.New()
-	configureLogger(cfg.Log)
+	bricks.ConfigureLogger(cfg.Log)
 	log.Debug().Any("value", cfg).Msg("parsed config")
 
 	if err := trace.Init(context.Background(), "links", cfg.Telemetry.Collector.Addr); err != nil {
@@ -152,22 +152,4 @@ func grpcSrv(cfg config.GRPC, s *service.Service) func() {
 	return func() {
 		grpcServ.GracefulStop()
 	}
-}
-
-func configureLogger(cfg config.Log) {
-	if cfg.UnixTimestamp {
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	}
-	if cfg.Pretty {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339})
-	}
-	if cfg.Caller {
-		log.Logger = log.Logger.With().Caller().Logger()
-	}
-	zerolog.DefaultContextLogger = &log.Logger
-	level, err := zerolog.ParseLevel(cfg.Level)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed parse log level")
-	}
-	zerolog.SetGlobalLevel(level)
 }
