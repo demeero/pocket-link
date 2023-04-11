@@ -26,7 +26,7 @@ type Config struct {
 
 func Init(ctx context.Context) (func(context.Context) error, error) {
 	var cfg Config
-	if err := envconfig.Process("", &cfg); err != nil {
+	if err := envconfig.Process("trace", &cfg); err != nil {
 		return nil, fmt.Errorf("failed process config: %w", err)
 	}
 	log.Debug().Any("value", cfg).Msg("trace config")
