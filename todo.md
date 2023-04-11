@@ -1,7 +1,5 @@
-- update all services with docker-compose, golangci, Taskfile, etc. Add each service to docker hub and docker-compose
-  deployment
+- add internal traces for dbs, etc
 - update buf build and GRPC/protobuf
-- update otel
 - add metrics
 - add grafana dashboard for metrics
 - add logging aggregation

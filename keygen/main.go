@@ -18,6 +18,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -129,7 +130,7 @@ func createUsedKeysRepo(cfg config.Config) (key.UsedKeysRepository, error) {
 	case config.UsedKeysRepositoryTypeMongo:
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
-		client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.MongoUsedKeys.URI))
+		client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.MongoUsedKeys.URI).SetMonitor(otelmongo.NewMonitor()))
 		if err != nil {
 			return nil, fmt.Errorf("failed connect to MongoDB: %w", err)
 		}

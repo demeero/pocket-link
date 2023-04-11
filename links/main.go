@@ -30,6 +30,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -98,7 +99,7 @@ func waitForShutdown(timeout time.Duration, shutdownFunc func(ctx context.Contex
 
 func mongoDB(cfg config.Mongo) (client *mongo.Client, shutdown func(ctx context.Context)) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.URI))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.URI).SetMonitor(otelmongo.NewMonitor()))
 	cancel()
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed connect to mongo")
