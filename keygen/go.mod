@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/alicebob/miniredis v2.5.0+incompatible
 	github.com/avast/retry-go/v3 v3.1.1
-	github.com/demeero/pocket-link/bricks v0.0.0-20230411203510-1399c2aaef70
+	github.com/demeero/pocket-link/bricks v0.0.0-20230411224936-f111ed5adbce
 	github.com/demeero/pocket-link/proto/gen/go v0.0.0-20210622173658-fb5b34dca4e2
 	github.com/go-redis/redismock/v9 v9.0.3
 	github.com/golang/mock v1.6.0
@@ -50,10 +50,13 @@ require (
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.14.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.37.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.37.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.14.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.14.0 // indirect
 	go.opentelemetry.io/otel/metric v0.37.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.14.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v0.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	golang.org/x/crypto v0.8.0 // indirect

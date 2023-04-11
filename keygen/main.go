@@ -11,6 +11,7 @@ import (
 
 	"github.com/demeero/pocket-link/bricks"
 	"github.com/demeero/pocket-link/bricks/grpc/interceptor"
+	"github.com/demeero/pocket-link/bricks/metric"
 	"github.com/demeero/pocket-link/bricks/trace"
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
@@ -48,6 +49,10 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed init tracing")
 	}
+	metricShutdown, err := metric.Init(context.Background())
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed init metric")
+	}
 
 	usedRepo, err := createUsedKeysRepo(cfg)
 	if err != nil {
@@ -68,16 +73,18 @@ func main() {
 	waitForShutdown(cfg.ShutdownTimeout, func(ctx context.Context) {
 		genCancel()
 
-		log.Info().Msg("start trace shutdown")
-		if err = traceShutdown(ctx); err != nil {
-			log.Error().Err(err).Msg("failed shutdown tracing")
-		} else {
-			log.Info().Msg("trace finished")
-		}
-
 		log.Info().Msg("start grpc srv shutdown")
 		grpcSrvShutdown()
 		log.Info().Msg("grpc srv finished")
+
+		log.Info().Msg("start trace shutdown")
+		if err = traceShutdown(ctx); err != nil {
+			log.Error().Err(err).Msg("failed shutdown tracing")
+		}
+
+		log.Info().Msg("start metric shutdown")
+		metricShutdown(ctx)
+
 	})
 }
 
@@ -126,7 +133,10 @@ func createUnusedKeysRepo(cfg config.RedisUnusedKeys) *redisrepo.UnusedKeys {
 		DB:   int(cfg.DB),
 	})
 	if err := redisotel.InstrumentTracing(client); err != nil {
-		log.Error().Err(err).Msg("failed instrument redis client for unused keys")
+		log.Error().Err(err).Msg("failed instrument tracing to redis client for unused keys")
+	}
+	if err := redisotel.InstrumentMetrics(client); err != nil {
+		log.Error().Err(err).Msg("failed instrument metrics to redis client for unused keys")
 	}
 	return redisrepo.NewUnusedKeys(client)
 }
@@ -150,7 +160,10 @@ func createUsedKeysRepo(cfg config.Config) (key.UsedKeysRepository, error) {
 			DB:   int(cfg.RedisUsedKeys.DB),
 		})
 		if err := redisotel.InstrumentTracing(client); err != nil {
-			log.Error().Err(err).Msg("failed instrument redis client for used keys")
+			log.Error().Err(err).Msg("failed instrument tracing to redis client for used keys")
+		}
+		if err := redisotel.InstrumentMetrics(client); err != nil {
+			log.Error().Err(err).Msg("failed instrument metrics to redis client for used keys")
 		}
 		return redisrepo.NewUsedKeys(client), nil
 	default:

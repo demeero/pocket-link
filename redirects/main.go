@@ -56,12 +56,18 @@ func main() {
 
 	client := redis.NewClient(&redis.Options{Addr: cfg.RedisLRU.Addr, DB: int(cfg.RedisLRU.DB)})
 	if err := redisotel.InstrumentTracing(client); err != nil {
-		log.Error().Err(err).Msg("failed instrument redis client")
+		log.Error().Err(err).Msg("failed instrument redis client with tracing")
+	}
+	if err := redisotel.InstrumentMetrics(client); err != nil {
+		log.Error().Err(err).Msg("failed instrument redis client with metrics")
 	}
 	l := link.New(linkpb.NewLinkServiceClient(conn), client)
 	httpShutdown := httpSrv(cfg.HTTP, l)
 
 	waitForShutdown(cfg.ShutdownTimeout, func(ctx context.Context) {
+		log.Info().Msg("shutdown HTTP")
+		httpShutdown(ctx)
+
 		log.Info().Msg("shutdown tracing")
 		if err := traceShutdown(ctx); err != nil {
 			log.Error().Err(err).Msg("failed shutdown tracing")
@@ -70,8 +76,6 @@ func main() {
 		log.Info().Msg("shutdown metrics")
 		metricShutdown(ctx)
 
-		log.Info().Msg("shutdown HTTP")
-		httpShutdown(ctx)
 		log.Info().Msg("shutdown links GRPC connection")
 		if err := conn.Close(); err != nil {
 			log.Error().Err(err).Msg("failed close grpc links connection")
