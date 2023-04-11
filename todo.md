@@ -1,4 +1,3 @@
-- add internal traces for dbs, etc
 - update buf build and GRPC/protobuf
 - add metrics
 - add grafana dashboard for metrics

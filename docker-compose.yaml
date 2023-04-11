@@ -44,7 +44,9 @@ services:
     command: [ "--config=/etc/otel-collector-config.yaml" ]
     expose:
       - "4317" # OTLP GRPC receiver
+      - "4318" # OTLP HTTP receiver
       - "8889" # Prometheus exporter metrics
+      - "8888" # Prometheus metrics exposed by the collector
       - "16686" # Dashboard
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
@@ -66,6 +68,14 @@ services:
       - "27018:27017"
     volumes:
       - mongo-data:/data/db
+
+  prometheus:
+    image: prom/prometheus:v2.40.7
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+    command: --config.file=/etc/prometheus/prometheus.yml --log.level=debug
+    ports:
+      - "9090:9090"
 
 volumes:
   mongo-data:
