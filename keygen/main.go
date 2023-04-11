@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/demeero/pocket-link/bricks"
+	"github.com/demeero/pocket-link/bricks/grpc/interceptor"
 	"github.com/demeero/pocket-link/bricks/trace"
-	"github.com/demeero/pocket-link/keygen/controller/rpc/interceptor"
 	"github.com/go-redis/redis/v8"
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"

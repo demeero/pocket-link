@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/alicebob/miniredis v2.5.0+incompatible
 	github.com/avast/retry-go/v3 v3.1.1
-	github.com/demeero/pocket-link/bricks v0.0.0-20230411181249-fbcc11970882
+	github.com/demeero/pocket-link/bricks v0.0.0-20230411192847-61d50a975c58
 	github.com/demeero/pocket-link/proto/gen/go v0.0.0-20210622173658-fb5b34dca4e2
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redis/redismock/v8 v8.11.5
