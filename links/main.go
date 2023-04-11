@@ -45,10 +45,7 @@ func main() {
 	bricks.ConfigureLogger(cfg.Log)
 	log.Debug().Any("value", cfg).Msg("parsed config")
 
-	traceShutdown, err := trace.Init(context.Background(), trace.Config{
-		ServiceName:       "links",
-		OTELCollectorAddr: cfg.Telemetry.Collector.Addr,
-	})
+	traceShutdown, err := trace.Init(context.Background())
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed init tracing")
 	}

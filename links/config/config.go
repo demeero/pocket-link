@@ -10,7 +10,6 @@ import (
 
 // Config represents the configuration of application.
 type Config struct {
-	Telemetry       Telemetry        `json:"telemetry"`
 	Mongo           Mongo            `json:"mongo"`
 	Keygen          KeygenClient     `json:"keygen"`
 	Log             bricks.LogConfig `json:"log"`
@@ -58,11 +57,4 @@ type Mongo struct {
 type KeygenClient struct {
 	// Addr is a target address for Keygen GRPC server (e.g. localhost:8081).
 	Addr string `required:"true" json:"addr"`
-}
-
-// Telemetry is a configuration for telemetry.
-type Telemetry struct {
-	Collector struct {
-		Addr string `json:"addr"`
-	} `json:"collector"`
 }

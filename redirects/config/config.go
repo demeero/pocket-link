@@ -10,7 +10,6 @@ import (
 
 type Config struct {
 	Links           LinksClient      `json:"links"`
-	Telemetry       Telemetry        `json:"telemetry"`
 	Log             bricks.LogConfig `json:"log"`
 	RedisLRU        RedisLRU         `json:"redis_lru" split_words:"true"`
 	HTTP            HTTP             `json:"http"`
@@ -47,11 +46,4 @@ type LinksClient struct {
 type RedisLRU struct {
 	Addr string `json:"addr"`
 	DB   uint8  `json:"db"`
-}
-
-// Telemetry is a configuration for telemetry.
-type Telemetry struct {
-	Collector struct {
-		Addr string `json:"addr"`
-	} `json:"collector"`
 }

@@ -63,6 +63,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/demeero/pocket-link/bricks v0.0.0-20230411192238-9eca3994898d h1:j60eIbpUThdaul/DJuPlNo4a1382B/L4+3gk2GZm82s=
 github.com/demeero/pocket-link/bricks v0.0.0-20230411192238-9eca3994898d/go.mod h1:3SwZKbrnITYdShlEXUbYnHsqzeXoUVWw0bu5+0AjeH8=
+github.com/demeero/pocket-link/bricks v0.0.0-20230411203906-1f542cc259b8 h1:F1NzcX+GlBIOr9W3h0iNieoF1/ji/8QfD6GReRtXbow=
+github.com/demeero/pocket-link/bricks v0.0.0-20230411203906-1f542cc259b8/go.mod h1:WBF04ASKqHJ3+HY2KfUqoF4hWsl/TJTyfI3fR/yyrS0=
 github.com/demeero/pocket-link/proto/gen/go v0.0.0-20210623113856-58d68e5c85f4 h1:Vx/tp9RAVVMx17v7e2kIok7wI/DSD5UceR/7LyMve8w=
 github.com/demeero/pocket-link/proto/gen/go v0.0.0-20210623113856-58d68e5c85f4/go.mod h1:podYehWV93iy7HLpRjDGNxX6k6n8sIpdIhfDSDCji5M=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
