@@ -3,6 +3,7 @@ module github.com/demeero/pocket-link/bricks
 go 1.20
 
 require (
+	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/rs/zerolog v1.29.0
 	go.opentelemetry.io/otel v1.14.0

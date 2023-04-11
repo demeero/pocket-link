@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kelseyhightower/envconfig"
+	"github.com/rs/zerolog/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
@@ -16,15 +18,24 @@ import (
 )
 
 type Config struct {
-	ServiceName       string
-	OTELCollectorAddr string
+	Hostname          string `json:"hostname"`
+	ServiceName       string `required:"true" split_words:"true" json:"service_name"`
+	ServiceNamespace  string `required:"true" split_words:"true" default:"pocket-link" json:"service_namespace"`
+	OTELCollectorAddr string `required:"true" split_words:"true" json:"otel_collector_addr"`
 }
 
-func Init(ctx context.Context, cfg Config) (func(context.Context) error, error) {
+func Init(ctx context.Context) (func(context.Context) error, error) {
+	var cfg Config
+	if err := envconfig.Process("", &cfg); err != nil {
+		return nil, fmt.Errorf("failed process config: %w", err)
+	}
+	log.Debug().Any("value", cfg).Msg("trace config")
 	res, err := resource.New(context.Background(),
 		resource.WithAttributes(
 			// the service name used to display traces in backends
 			semconv.ServiceName(cfg.ServiceName),
+			semconv.ServiceNamespace(cfg.ServiceNamespace),
+			semconv.HostName(cfg.Hostname),
 		),
 	)
 	if err != nil {
