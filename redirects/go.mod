@@ -6,13 +6,14 @@ require (
 	github.com/alicebob/miniredis v2.5.0+incompatible
 	github.com/demeero/pocket-link/bricks v0.0.0-20230411203906-1f542cc259b8
 	github.com/demeero/pocket-link/proto/gen/go v0.0.0-20210623125708-5227b6f1e5a1
-	github.com/go-redis/redis/v8 v8.11.5
-	github.com/go-redis/redismock/v8 v8.11.5
+	github.com/go-redis/redismock/v9 v9.0.3
 	github.com/golang/mock v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/labstack/gommon v0.4.0
+	github.com/redis/go-redis/extra/redisotel/v9 v9.0.2
+	github.com/redis/go-redis/v9 v9.0.3
 	github.com/rs/zerolog v1.29.0
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.40.0
@@ -36,6 +37,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/redis/go-redis/extra/rediscmd/v9 v9.0.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/yuin/gopher-lua v1.1.0 // indirect

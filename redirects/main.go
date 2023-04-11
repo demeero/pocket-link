@@ -16,12 +16,12 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	echolog "github.com/labstack/gommon/log"
+	"github.com/redis/go-redis/extra/redisotel/v9"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"google.golang.org/grpc/credentials/insecure"
-
-	"github.com/go-redis/redis/v8"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/demeero/pocket-link/redirects/config"
 	"github.com/demeero/pocket-link/redirects/handler"
@@ -48,7 +48,11 @@ func main() {
 		log.Fatal().Err(err).Msg("error create grpc links connection")
 	}
 
-	l := link.New(linkpb.NewLinkServiceClient(conn), redis.NewClient(&redis.Options{Addr: cfg.RedisLRU.Addr, DB: int(cfg.RedisLRU.DB)}))
+	client := redis.NewClient(&redis.Options{Addr: cfg.RedisLRU.Addr, DB: int(cfg.RedisLRU.DB)})
+	if err := redisotel.InstrumentTracing(client); err != nil {
+		log.Error().Err(err).Msg("failed instrument redis client")
+	}
+	l := link.New(linkpb.NewLinkServiceClient(conn), client)
 	httpShutdown := httpSrv(cfg.HTTP, l)
 
 	waitForShutdown(cfg.ShutdownTimeout, func(ctx context.Context) {

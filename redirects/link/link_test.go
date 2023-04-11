@@ -8,10 +8,10 @@ import (
 	"time"
 
 	linkpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
+	"github.com/go-redis/redismock/v9"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/alicebob/miniredis"
-	"github.com/go-redis/redis/v8"
-	"github.com/go-redis/redismock/v8"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

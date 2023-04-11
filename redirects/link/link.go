@@ -7,9 +7,9 @@ import (
 	"net/url"
 
 	linkpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 
-	"github.com/go-redis/redis/v8"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
