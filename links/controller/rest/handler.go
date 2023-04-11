@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/demeero/pocket-link/links/controller/rest/middleware"
+	"github.com/demeero/pocket-link/bricks/httpecho/middleware"
 	"github.com/rs/zerolog/log"
 
 	"github.com/demeero/pocket-link/links/service"

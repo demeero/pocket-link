@@ -48,20 +48,17 @@ services:
 
   redis:
     image: redis:7-alpine3.17
-    restart: always
     ports:
       - "6479:6379"
 
   redis-lru:
     image: redis:7-alpine3.17
-    restart: always
     command: [ "--port 6380", "--maxmemory 2mb", "--maxmemory-policy allkeys-lru" ]
     ports:
       - "6480:6380"
 
   mongo:
     image: mongo:6
-    restart: always
     ports:
       - "27018:27017"
     volumes:
