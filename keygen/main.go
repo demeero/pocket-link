@@ -12,9 +12,10 @@ import (
 	"github.com/demeero/pocket-link/bricks"
 	"github.com/demeero/pocket-link/bricks/grpc/interceptor"
 	"github.com/demeero/pocket-link/bricks/trace"
-	"github.com/go-redis/redis/v8"
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"github.com/redis/go-redis/extra/redisotel/v9"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -52,10 +53,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed create used keys repository")
 	}
-	unusedRepo := redisrepo.NewUnusedKeys(redis.NewClient(&redis.Options{
-		Addr: cfg.RedisUnusedKeys.Addr,
-		DB:   int(cfg.RedisUnusedKeys.DB),
-	}))
+	unusedRepo := createUnusedKeysRepo(cfg.RedisUnusedKeys)
 
 	genCtx, genCancel := context.WithCancel(context.Background())
 	genCfg := key.GeneratorConfig{
@@ -122,6 +120,17 @@ func grpcServ(cfg config.GRPC, k *key.Keys) func() {
 	}
 }
 
+func createUnusedKeysRepo(cfg config.RedisUnusedKeys) *redisrepo.UnusedKeys {
+	client := redis.NewClient(&redis.Options{
+		Addr: cfg.Addr,
+		DB:   int(cfg.DB),
+	})
+	if err := redisotel.InstrumentTracing(client); err != nil {
+		log.Error().Err(err).Msg("failed instrument redis client for unused keys")
+	}
+	return redisrepo.NewUnusedKeys(client)
+}
+
 func createUsedKeysRepo(cfg config.Config) (key.UsedKeysRepository, error) {
 	if cfg.UsedKeysRepositoryType == "" {
 		cfg.UsedKeysRepositoryType = config.UsedKeysRepositoryTypeRedis
@@ -136,10 +145,14 @@ func createUsedKeysRepo(cfg config.Config) (key.UsedKeysRepository, error) {
 		}
 		return mongorepo.NewUsedKeys(client.Database("pocket-link"))
 	case config.UsedKeysRepositoryTypeRedis:
-		return redisrepo.NewUsedKeys(redis.NewClient(&redis.Options{
+		client := redis.NewClient(&redis.Options{
 			Addr: cfg.RedisUsedKeys.Addr,
 			DB:   int(cfg.RedisUsedKeys.DB),
-		})), nil
+		})
+		if err := redisotel.InstrumentTracing(client); err != nil {
+			log.Error().Err(err).Msg("failed instrument redis client for used keys")
+		}
+		return redisrepo.NewUsedKeys(client), nil
 	default:
 		return nil, fmt.Errorf("unsupported used keys repository type: %s", cfg.UsedKeysRepositoryType)
 	}

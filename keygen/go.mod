@@ -7,12 +7,13 @@ require (
 	github.com/avast/retry-go/v3 v3.1.1
 	github.com/demeero/pocket-link/bricks v0.0.0-20230411203510-1399c2aaef70
 	github.com/demeero/pocket-link/proto/gen/go v0.0.0-20210622173658-fb5b34dca4e2
-	github.com/go-redis/redis/v8 v8.11.5
-	github.com/go-redis/redismock/v8 v8.11.5
+	github.com/go-redis/redismock/v9 v9.0.3
 	github.com/golang/mock v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/redis/go-redis/extra/redisotel/v9 v9.0.2
+	github.com/redis/go-redis/v9 v9.0.3
 	github.com/rs/zerolog v1.29.0
 	github.com/stretchr/testify v1.8.2
 	go.mongodb.org/mongo-driver v1.11.4
@@ -41,6 +42,7 @@ require (
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/redis/go-redis/extra/rediscmd/v9 v9.0.2 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.1 // indirect
 	github.com/xdg-go/stringprep v1.0.3 // indirect
