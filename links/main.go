@@ -12,11 +12,11 @@ import (
 	"time"
 
 	"github.com/demeero/pocket-link/bricks"
+	"github.com/demeero/pocket-link/bricks/grpc/interceptor"
 	"github.com/demeero/pocket-link/bricks/trace"
 	"github.com/demeero/pocket-link/links/config"
 	"github.com/demeero/pocket-link/links/controller/rest"
 	"github.com/demeero/pocket-link/links/controller/rpc"
-	"github.com/demeero/pocket-link/links/controller/rpc/interceptor"
 	"github.com/demeero/pocket-link/links/repository"
 	"github.com/demeero/pocket-link/links/service"
 	"google.golang.org/grpc/credentials/insecure"

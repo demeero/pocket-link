@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
-	github.com/demeero/pocket-link/bricks v0.0.0-20230411190525-ea61ecb5fa17
+	github.com/demeero/pocket-link/bricks v0.0.0-20230411192238-9eca3994898d
 	github.com/demeero/pocket-link/proto/gen/go v0.0.0-20210623113856-58d68e5c85f4
 	github.com/golang/mock v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
