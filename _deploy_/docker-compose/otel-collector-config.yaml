@@ -2,19 +2,20 @@ receivers:
   otlp:
     protocols:
       grpc:
-      http:
 
 exporters:
   jaeger:
     endpoint: jaeger:14250
-    insecure: true
-  logging:
-    loglevel: DEBUG
+    tls:
+      insecure: true
 
 processors:
   batch:
 
 service:
+  telemetry:
+    logs:
+      level: "debug"
   pipelines:
     traces:
       receivers: [ otlp ]

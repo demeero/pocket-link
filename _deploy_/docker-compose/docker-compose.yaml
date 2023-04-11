@@ -38,9 +38,9 @@ services:
 
   otel-collector:
     image: otel/opentelemetry-collector:0.75.0
-    command: [ "--config=/etc/otel-collector-config.yaml", "--log-level=info" ]
+    command: [ "--config=/etc/otel-collector-config.yaml"]
     expose:
-      - "55681" # HTTP otel receiver
+      - "4317" # OTLP GRPC receiver
       - "8889" # Prometheus exporter metrics
       - "16686" # Dashboard
     volumes:

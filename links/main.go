@@ -45,7 +45,11 @@ func main() {
 	bricks.ConfigureLogger(cfg.Log)
 	log.Debug().Any("value", cfg).Msg("parsed config")
 
-	if err := trace.Init(context.Background(), "links", cfg.Telemetry.Collector.Addr); err != nil {
+	traceShutdown, err := trace.Init(context.Background(), trace.Config{
+		ServiceName:       "links",
+		OTELCollectorAddr: cfg.Telemetry.Collector.Addr,
+	})
+	if err != nil {
 		log.Fatal().Err(err).Msg("failed init tracing")
 	}
 
@@ -66,6 +70,12 @@ func main() {
 	grpcShutdown := grpcSrv(cfg.GRPC, svc)
 
 	waitForShutdown(cfg.ShutdownTimeout, func(ctx context.Context) {
+		log.Info().Msg("shutdown tracing")
+		if err := traceShutdown(ctx); err != nil {
+			log.Error().Err(err).Msg("failed shutdown tracing")
+		} else {
+			log.Info().Msg("tracing finished")
+		}
 		log.Info().Msg("shutdown HTTP")
 		httpShutdown(ctx)
 		log.Info().Msg("shutdown GRPC")
