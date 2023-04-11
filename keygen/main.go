@@ -66,12 +66,10 @@ func main() {
 
 	grpcSrvShutdown := grpcServ(cfg.GRPC, key.New(cfg.Keys.TTL, usedRepo, unusedRepo))
 
-	waitForShutdown(cfg.ShutdownTimeout, func(context.Context) {
+	waitForShutdown(cfg.ShutdownTimeout, func(ctx context.Context) {
 		genCancel()
 
 		log.Info().Msg("start trace shutdown")
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
-		defer cancel()
 		if err = traceShutdown(ctx); err != nil {
 			log.Error().Err(err).Msg("failed shutdown tracing")
 		} else {
