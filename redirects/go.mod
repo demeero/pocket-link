@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/alicebob/miniredis v2.5.0+incompatible
-	github.com/demeero/pocket-link/bricks v0.0.0-20230411185246-4724f33249d8
+	github.com/demeero/pocket-link/bricks v0.0.0-20230411190525-ea61ecb5fa17
 	github.com/demeero/pocket-link/proto/gen/go v0.0.0-20210623125708-5227b6f1e5a1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redis/redismock/v8 v8.11.5

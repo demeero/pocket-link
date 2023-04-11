@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/demeero/pocket-link/redirects/handler/middleware"
+	"github.com/demeero/pocket-link/bricks/httpecho/middleware"
 	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
