@@ -69,6 +69,12 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/demeero/pocket-link/bricks v0.0.0-20230411192847-61d50a975c58 h1:76U2ukD70r3bjt3Cz44rmYkGcJYPQQGUvn6+XMMQnfo=
 github.com/demeero/pocket-link/bricks v0.0.0-20230411192847-61d50a975c58/go.mod h1:3SwZKbrnITYdShlEXUbYnHsqzeXoUVWw0bu5+0AjeH8=
+github.com/demeero/pocket-link/bricks v0.0.0-20230411201730-c01a50274fdd h1:FT7r/m6Gzc2DVi6ODk7bpoQwLWon6qiZTFIt/N3laAQ=
+github.com/demeero/pocket-link/bricks v0.0.0-20230411201730-c01a50274fdd/go.mod h1:WBF04ASKqHJ3+HY2KfUqoF4hWsl/TJTyfI3fR/yyrS0=
+github.com/demeero/pocket-link/bricks v0.0.0-20230411201916-39dc91ac8176 h1:kQN/jXSrl5axL1h/7r7DtVbUXH989scRUv+AkRLtSuo=
+github.com/demeero/pocket-link/bricks v0.0.0-20230411201916-39dc91ac8176/go.mod h1:WBF04ASKqHJ3+HY2KfUqoF4hWsl/TJTyfI3fR/yyrS0=
+github.com/demeero/pocket-link/bricks v0.0.0-20230411203510-1399c2aaef70 h1:SLAvrh+GbF+8CwHDYcSFJp9Gzy7TSJ+r2EpyUEEVZKM=
+github.com/demeero/pocket-link/bricks v0.0.0-20230411203510-1399c2aaef70/go.mod h1:WBF04ASKqHJ3+HY2KfUqoF4hWsl/TJTyfI3fR/yyrS0=
 github.com/demeero/pocket-link/proto/gen/go v0.0.0-20210622173658-fb5b34dca4e2 h1:dD8vWRCgQTxKmUtH3VwEqMt6T2w+W6UclvDFJoDcHsg=
 github.com/demeero/pocket-link/proto/gen/go v0.0.0-20210622173658-fb5b34dca4e2/go.mod h1:podYehWV93iy7HLpRjDGNxX6k6n8sIpdIhfDSDCji5M=
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f h1:lO4WD4F/rVNCu3HqELle0jiPLLBs70cWOduZpkS1E78=

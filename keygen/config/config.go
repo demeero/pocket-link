@@ -13,7 +13,6 @@ type Config struct {
 	Log                    bricks.LogConfig       `json:"log"`
 	UsedKeysRepositoryType UsedKeysRepositoryType `required:"true" split_words:"true" json:"used_keys_repository_type"`
 	MongoUsedKeys          MongoUsedKeys          `split_words:"true" json:"mongo_used_keys"`
-	Telemetry              Telemetry              `json:"telemetry"`
 	RedisUsedKeys          RedisUsedKeys          `split_words:"true" json:"redis_used_keys"`
 	RedisUnusedKeys        RedisUnusedKeys        `split_words:"true" json:"redis_unused_keys"`
 	Generator              Generator              `json:"generator"`
@@ -70,10 +69,4 @@ type RedisUsedKeys struct {
 type RedisUnusedKeys struct {
 	Addr string `required:"true" json:"addr"`
 	DB   uint8  `json:"db"`
-}
-
-type Telemetry struct {
-	Collector struct {
-		Addr string `json:"addr"`
-	} `json:"collector"`
 }
