@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/demeero/pocket-link/bricks"
+	"github.com/demeero/pocket-link/bricks/metric"
 	"github.com/demeero/pocket-link/bricks/trace"
 	linkpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
 	"github.com/joho/godotenv"
@@ -40,7 +41,12 @@ func main() {
 
 	traceShutdown, err := trace.Init(context.Background())
 	if err != nil {
-		log.Fatal().Err(err).Msg("error init tracing")
+		log.Fatal().Err(err).Msg("failed init tracing")
+	}
+
+	metricShutdown, err := metric.Init(context.Background())
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed init metrics")
 	}
 
 	conn, err := grpc.Dial(cfg.Links.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
@@ -59,9 +65,10 @@ func main() {
 		log.Info().Msg("shutdown tracing")
 		if err := traceShutdown(ctx); err != nil {
 			log.Error().Err(err).Msg("failed shutdown tracing")
-		} else {
-			log.Info().Msg("tracing shutdown completed")
 		}
+
+		log.Info().Msg("shutdown metrics")
+		metricShutdown(ctx)
 
 		log.Info().Msg("shutdown HTTP")
 		httpShutdown(ctx)

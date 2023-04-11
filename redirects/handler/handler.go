@@ -22,6 +22,7 @@ func middlewares(e *echo.Echo) {
 	e.Pre(echomw.RemoveTrailingSlash())
 	e.Use(middleware.Recover())
 	e.Use(echomw.CORS())
+	e.Use(middleware.Meter())
 	e.Use(otelecho.Middleware("redirects"))
 	e.Use(middleware.Ctx())
 	e.Use(middleware.Log())

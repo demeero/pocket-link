@@ -13,6 +13,7 @@ import (
 
 	"github.com/demeero/pocket-link/bricks"
 	"github.com/demeero/pocket-link/bricks/grpc/interceptor"
+	"github.com/demeero/pocket-link/bricks/metric"
 	"github.com/demeero/pocket-link/bricks/trace"
 	"github.com/demeero/pocket-link/links/config"
 	"github.com/demeero/pocket-link/links/controller/rest"
@@ -50,6 +51,10 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed init tracing")
 	}
+	metricsShutdown, err := metric.Init(context.Background())
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed init metrics")
+	}
 
 	mClient, mShutdown := mongoDB(cfg.Mongo)
 	repo, err := repository.New(mClient.Database("pocket-link"))
@@ -71,9 +76,9 @@ func main() {
 		log.Info().Msg("shutdown tracing")
 		if err := traceShutdown(ctx); err != nil {
 			log.Error().Err(err).Msg("failed shutdown tracing")
-		} else {
-			log.Info().Msg("tracing finished")
 		}
+		log.Info().Msg("shutdown metrics")
+		metricsShutdown(ctx)
 		log.Info().Msg("shutdown HTTP")
 		httpShutdown(ctx)
 		log.Info().Msg("shutdown GRPC")
