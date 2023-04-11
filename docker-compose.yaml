@@ -2,14 +2,16 @@ version: "3.9"
 services:
 
   keygen:
-    image: demeero/pocket-link-keygen
+    build:
+      context: ./keygen
     env_file:
       - keygen.env
     ports:
       - "8080:8080"
 
   links:
-    image: demeero/pocket-link-links
+    build:
+      context: ./links
     env_file:
       - links.env
     ports:
@@ -17,7 +19,8 @@ services:
       - "8082:8081"
 
   redirects:
-    image: demeero/pocket-link-redirects
+    build:
+      context: ./redirects
     env_file:
       - redirects.env
     ports:
@@ -38,7 +41,7 @@ services:
 
   otel-collector:
     image: otel/opentelemetry-collector:0.75.0
-    command: [ "--config=/etc/otel-collector-config.yaml"]
+    command: [ "--config=/etc/otel-collector-config.yaml" ]
     expose:
       - "4317" # OTLP GRPC receiver
       - "8889" # Prometheus exporter metrics
