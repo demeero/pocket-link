@@ -3,6 +3,7 @@ package trace
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rs/zerolog/log"
@@ -18,7 +19,6 @@ import (
 )
 
 type Config struct {
-	Hostname          string `json:"hostname"`
 	ServiceName       string `required:"true" split_words:"true" json:"service_name"`
 	ServiceNamespace  string `required:"true" split_words:"true" default:"pocket-link" json:"service_namespace"`
 	OTELCollectorAddr string `required:"true" split_words:"true" json:"otel_collector_addr"`
@@ -35,7 +35,7 @@ func Init(ctx context.Context) (func(context.Context) error, error) {
 			// the service name used to display traces in backends
 			semconv.ServiceName(cfg.ServiceName),
 			semconv.ServiceNamespace(cfg.ServiceNamespace),
-			semconv.HostName(cfg.Hostname),
+			semconv.HostName(os.Getenv("HOSTNAME")),
 		),
 	)
 	if err != nil {
