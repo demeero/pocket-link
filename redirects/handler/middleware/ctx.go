@@ -11,7 +11,7 @@ func Ctx() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			req := c.Request()
-			traceID, spanID := trace.FromContext(req.Context())
+			spanID, traceID := trace.FromContext(req.Context())
 			reqLogger := log.With().Str("uri", req.RequestURI).
 				Str("span_id", spanID).
 				Str("trace_id", traceID).
