@@ -4,17 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
 
+	"github.com/demeero/bricks/errbrick"
+	"github.com/demeero/bricks/slogbrick"
 	linkpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
 	"github.com/redis/go-redis/v9"
-	"github.com/rs/zerolog/log"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
-
-var ErrNotFound = errors.New("not found")
 
 type Links struct {
 	client linkpb.LinkServiceClient
@@ -49,11 +48,10 @@ func (l *Links) lookup(ctx context.Context, shortened string) (string, error) {
 		return original, nil
 	}
 	if !errors.Is(err, redis.Nil) {
-		log.Ctx(ctx).Error().
-			Err(err).
-			Str("shortened", shortened).
-			Str("original", original).
-			Msg("failed get link from LRU cache")
+		slogbrick.FromCtx(ctx).Error("failed get link from LRU cache",
+			slog.String("shortened", shortened),
+			slog.String("original", original),
+			slog.Any("err", err))
 	}
 	res, err := l.lookupFromLinkService(ctx, shortened)
 	if err != nil {
@@ -62,11 +60,10 @@ func (l *Links) lookup(ctx context.Context, shortened string) (string, error) {
 	go func() {
 		err := l.rds.SetArgs(ctx, shortened, res.GetOriginal(), redis.SetArgs{ExpireAt: res.GetExpireTime().AsTime()}).Err()
 		if err != nil {
-			log.Ctx(ctx).Error().
-				Err(err).
-				Str("shortened", shortened).
-				Str("original", original).
-				Msg("failed put link to LRU cache")
+			slogbrick.FromCtx(ctx).Error("failed put link to LRU cache",
+				slog.String("shortened", shortened),
+				slog.String("original", original),
+				slog.Any("err", err))
 		}
 	}()
 	return res.GetOriginal(), nil
@@ -75,7 +72,7 @@ func (l *Links) lookup(ctx context.Context, shortened string) (string, error) {
 func (l *Links) lookupFromLinkService(ctx context.Context, shortened string) (*linkpb.Link, error) {
 	resp, err := l.client.GetLink(ctx, &linkpb.GetLinkRequest{Shortened: shortened})
 	if status.Code(err) == codes.NotFound {
-		return nil, fmt.Errorf("%w: %s", ErrNotFound, shortened)
+		return nil, fmt.Errorf("%w: %s", errbrick.ErrNotFound, shortened)
 	}
 	if err != nil {
 		return nil, err

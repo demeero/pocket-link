@@ -1,118 +1,132 @@
+// nolint: cyclop // it's ok for main package to have big average complexity
 package main
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
-	"time"
 
-	"github.com/demeero/pocket-link/bricks"
-	"github.com/demeero/pocket-link/bricks/metric"
-	"github.com/demeero/pocket-link/bricks/trace"
+	"github.com/demeero/bricks/configbrick"
+	"github.com/demeero/bricks/echobrick"
+	"github.com/demeero/bricks/otelbrick"
+	"github.com/demeero/bricks/slogbrick"
 	linkpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	echolog "github.com/labstack/gommon/log"
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
-	"github.com/rs/zerolog/log"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/demeero/pocket-link/redirects/config"
-	"github.com/demeero/pocket-link/redirects/handler"
+	"github.com/demeero/pocket-link/redirects/httphandler"
 	"github.com/demeero/pocket-link/redirects/link"
 )
 
 func main() {
 	// Load environment variables from a `.env` file if one exists
 	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
-		log.Fatal().Err(err).Msg("failed load .env file")
+		log.Fatal("failed load .env file", err)
 	}
 
-	cfg := config.New()
-	bricks.ConfigureLogger(cfg.Log)
-	log.Debug().Any("value", cfg).Msg("parsed config")
+	cfg := config{}
+	configbrick.LoadConfig(&cfg, os.Getenv("LOG_CONFIG") == "true")
+	slogbrick.Configure(slogbrick.Config{
+		Level:     cfg.Log.Level,
+		AddSource: cfg.Log.AddSource,
+		JSON:      cfg.Log.JSON,
+	})
 
-	traceShutdown, err := trace.Init(context.Background())
+	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
+
+	traceCfg := cfg.OTEL.Trace
+	traceShutdown, err := otelbrick.InitTrace(ctx, otelbrick.TraceConfig{
+		ServiceName:           cfg.ServiceName,
+		ServiceNamespace:      cfg.ServiceNamespace,
+		DeploymentEnvironment: cfg.Env,
+		OTELHTTPEndpoint:      traceCfg.Endpoint,
+		OTELHTTPPathPrefix:    traceCfg.PathPrefix,
+		Insecure:              traceCfg.Insecure,
+		Headers:               traceCfg.BasicAuthHeader(),
+	})
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed init tracing")
+		log.Fatalf("failed init tracer: %s", err)
 	}
 
-	metricShutdown, err := metric.Init(context.Background())
+	meterCfg := cfg.OTEL.Meter
+	meterShutdown, err := otelbrick.InitMeter(ctx, otelbrick.MeterConfig{
+		ServiceName:           cfg.ServiceName,
+		ServiceNamespace:      cfg.ServiceNamespace,
+		DeploymentEnvironment: cfg.Env,
+		OTELHTTPEndpoint:      meterCfg.Endpoint,
+		OTELHTTPPathPrefix:    meterCfg.PathPrefix,
+		Insecure:              meterCfg.Insecure,
+		RuntimeMetrics:        true,
+		HostMetrics:           true,
+		Headers:               meterCfg.BasicAuthHeader(),
+	})
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed init metrics")
+		log.Fatalf("failed init metrics: %s", err)
 	}
 
-	conn, err := grpc.Dial(cfg.Links.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
+	conn, err := grpc.Dial(cfg.Links.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
 	if err != nil {
-		log.Fatal().Err(err).Msg("error create grpc links connection")
+		log.Fatalf("failed create grpc links connection: %s", err)
 	}
 
-	client := redis.NewClient(&redis.Options{Addr: cfg.RedisLRU.Addr, DB: int(cfg.RedisLRU.DB)})
+	client := redis.NewClient(&redis.Options{Addr: cfg.RedisLRU.Addr, DB: cfg.RedisLRU.DB, Password: cfg.RedisLRU.Password})
 	if err := redisotel.InstrumentTracing(client); err != nil {
-		log.Error().Err(err).Msg("failed instrument redis client with tracing")
-	}
-	if err := redisotel.InstrumentMetrics(client); err != nil {
-		log.Error().Err(err).Msg("failed instrument redis client with metrics")
+		slog.Error("failed instrument redis client with tracing", slog.Any("err", err))
 	}
 	l := link.New(linkpb.NewLinkServiceClient(conn), client)
-	httpShutdown := httpSrv(cfg.HTTP, l)
+	httpShutdown := httpSrv(cfg.ServiceName, cfg.HTTP, l)
 
-	waitForShutdown(cfg.ShutdownTimeout, func(ctx context.Context) {
-		log.Info().Msg("shutdown HTTP")
-		httpShutdown(ctx)
-
-		log.Info().Msg("shutdown tracing")
-		if err := traceShutdown(ctx); err != nil {
-			log.Error().Err(err).Msg("failed shutdown tracing")
-		}
-
-		log.Info().Msg("shutdown metrics")
-		metricShutdown(ctx)
-
-		log.Info().Msg("shutdown links GRPC connection")
-		if err := conn.Close(); err != nil {
-			log.Error().Err(err).Msg("failed close grpc links connection")
-		}
-	})
-}
-
-func waitForShutdown(timeout time.Duration, shutdownFunc func(ctx context.Context)) {
-	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
-	<-sigint
-	log.Info().Msg("start shutdown")
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	shutdownFunc(ctx)
-	log.Info().Msg("shutdown completed")
+	<-ctx.Done()
+	slog.Info("shutting down")
+	httpShutdown(nil)
+	if err := meterShutdown(context.Background()); err != nil {
+		slog.Error("failed shutdown meter provider", slog.Any("err", err))
+	}
+	if err := traceShutdown(context.Background()); err != nil {
+		slog.Error("failed shutdown tracer provider", slog.Any("err", err))
+	}
+	if err := client.Close(); err != nil {
+		slog.Error("failed shutdown redis client", slog.Any("err", err))
+	}
+	if err := conn.Close(); err != nil {
+		slog.Error("failed shutdown grpc links connection", slog.Any("err", err))
+	}
 }
 
-func httpSrv(cfg config.HTTP, l *link.Links) func(ctx context.Context) {
+func httpSrv(svcName string, cfg configbrick.HTTP, l *link.Links) func(ctx context.Context) {
 	e := echo.New()
+	srv := e.Server
+	srv.WriteTimeout = cfg.WriteTimeout
+	srv.ReadTimeout = cfg.ReadTimeout
+	srv.ReadHeaderTimeout = cfg.ReadHeaderTimeout
 	e.HideBanner = true
 	e.HidePort = true
+	e.HTTPErrorHandler = echobrick.ErrorHandler
 	e.Logger.SetLevel(echolog.OFF)
-	e.Server.ReadTimeout = cfg.ReadTimeout
-	e.Server.ReadHeaderTimeout = cfg.ReadHeaderTimeout
-	e.Server.WriteTimeout = cfg.WriteTimeout
-	handler.Setup(e, l)
+	httphandler.Setup(svcName, e, l)
 	go func() {
-		log.Info().Msg("init HTTP srv")
+		slog.Info("init HTTP srv")
 		err := e.Start(fmt.Sprintf(":%d", cfg.Port))
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Error().Err(err).Msg("failed http serve")
+			log.Fatalf("failed http serve: %s", err)
 		}
 	}()
 	return func(ctx context.Context) {
 		if err := e.Shutdown(ctx); err != nil {
-			log.Error().Err(err).Msg("failed shutdown http srv")
+			slog.Error("failed shutdown http srv", slog.Any("err", err))
 		}
 	}
 }

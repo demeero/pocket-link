@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/demeero/bricks/errbrick"
 	linkpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
 	"github.com/go-redis/redismock/v9"
 	"github.com/redis/go-redis/v9"
@@ -170,7 +171,7 @@ func TestLinks_Lookup_NotFound(t *testing.T) {
 	l := New(mockLinkClient, db)
 
 	actual, err := l.Lookup(ctx, short)
-	assert.ErrorIs(t, err, ErrNotFound)
+	assert.ErrorIs(t, err, errbrick.ErrNotFound)
 	assert.Nil(t, actual)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
