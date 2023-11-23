@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
-	github.com/demeero/bricks v0.0.0-20231123004008-5e1d417bef9d
+	github.com/demeero/bricks v0.0.0-20231123155948-6af69ba0897e
 	github.com/demeero/pocket-link/proto/gen/go v0.0.0-20231123015235-4f8442cabca3
 	github.com/golang/mock v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0

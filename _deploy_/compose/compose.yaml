@@ -1,0 +1,54 @@
+version: "3.9"
+services:
+
+  keygen:
+    build:
+      context: ../../keygen
+    env_file:
+      - keygen.env
+    ports:
+      - "8080:8080"
+
+  links:
+    build:
+      context: ../../links
+    env_file:
+      - links.env
+    ports:
+      - "8081:8080"
+      - "8082:8081"
+
+  redirects:
+    build:
+      context: ../../redirects
+    env_file:
+      - redirects.env
+    ports:
+      - "8083:8080"
+
+  frontend:
+    build:
+      context: ../../frontend
+    ports:
+      - "8084:80"
+
+  redis:
+    image: redis:7-alpine3.17
+    ports:
+      - "6479:6379"
+
+  redis-lru:
+    image: redis:7-alpine3.17
+    command: [ "--maxmemory 2mb", "--maxmemory-policy allkeys-lru" ]
+    ports:
+      - "6480:6379"
+
+  mongo:
+    image: mongo:4
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:

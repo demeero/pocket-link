@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/alicebob/miniredis v2.5.0+incompatible
-	github.com/demeero/bricks v0.0.0-20231123004008-5e1d417bef9d
+	github.com/demeero/bricks v0.0.0-20231123155948-6af69ba0897e
 	github.com/demeero/pocket-link/proto/gen/go v0.0.0-20231123000339-17de94891ab0
 	github.com/go-redis/redismock/v9 v9.0.3
 	github.com/golang/mock v1.6.0
