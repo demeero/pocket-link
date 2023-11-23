@@ -7,7 +7,7 @@
 - github actions
 - remove cors middleware from internal services and move it to gateway
 - add root Taskfile.yaml to manage children Taskfiles
-- extract waitForShutdown to bricks
-- gix redis-lru error {"level":"error","uri":"/Cz2i-HS0_j","span_id":"6210110e5371d2f9","trace_id":"a52237a54a1daee92bfae36a3a45df4f","http_method":"GET","error":"context canceled","shortened":"Cz2i-HS0_j","original":"","time":1681249519,"caller":"/src/redirects/link/link.go:69","message":"failed put link to LRU cache"}
+- fix redis-lru error {"level":"error","uri":"/Cz2i-HS0_j","span_id":"6210110e5371d2f9","trace_id":"
+  a52237a54a1daee92bfae36a3a45df4f","http_method":"GET","error":"context canceled","shortened":"Cz2i-HS0_j","
+  original":"","time":1681249519,"caller":"/src/redirects/link/link.go:69","message":"failed put link to LRU cache"}
 - use only one env var for service name (for metrics, for tracing) and remove hardcoded service name when pass it to otelecho.Middleware
-
