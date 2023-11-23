@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: pocket-link
+
+resources:
+  - keygen.yaml
+
+# these labels will be automatically included in label selectors
+commonLabels:
+  app.kubernetes.io/part-of: pocket-link
+
+# adding labels without also automatically injecting corresponding selectors
+labels:
+  - pairs:
+      app.kubernetes.io/version: latest # will be overriden by replacement below
+    includeTemplates: true
+    includeSelectors: false
+
+configMapGenerator:
+  - name: keygen
+    envs:
+      - keygen.env
+
+replacements:
+  - source:
+      kind: Deployment
+      fieldPath: spec.template.spec.containers.0.image
+      options:
+        delimiter: ":"
+        index: 1
+    targets:
+      - select:
+          kind: Deployment
+        fieldPaths:
+          - spec.template.metadata.labels.[app.kubernetes.io/version]
