@@ -8,7 +8,7 @@ import (
 
 	"github.com/avast/retry-go/v3"
 	"github.com/demeero/bricks/errbrick"
-	"github.com/rs/zerolog/log"
+	"github.com/demeero/bricks/slogbrick"
 )
 
 // Key is a key for short link.
@@ -76,11 +76,11 @@ func (k *Keys) Use(ctx context.Context) (Key, error) {
 
 	retryCond := func(err error) bool {
 		if errors.Is(err, errbrick.ErrConflict) {
-			log.Ctx(ctx).Info().Msg("expected free key is already in use - retry")
+			slogbrick.FromCtx(ctx).Info("expected free key is already in use - retry")
 			return true
 		}
 		if errors.Is(err, errbrick.ErrNotFound) {
-			log.Ctx(ctx).Info().Msg("no free keys - retry")
+			slogbrick.FromCtx(ctx).Info("no free keys - retry")
 			return true
 		}
 		return false

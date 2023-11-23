@@ -4,10 +4,9 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"time"
-
-	"github.com/rs/zerolog/log"
 )
 
 var letterRunes = []rune("-_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -33,7 +32,7 @@ func Generate(ctx context.Context, cfg GeneratorConfig, used UsedKeysRepository,
 		case <-t.C:
 			size, err := unused.Size(ctx)
 			if err != nil {
-				log.Error().Err(err).Msg("failed get unused keys size")
+				slog.Error("failed get unused keys size", slog.Any("err", err))
 				continue
 			}
 			if size > int64(cfg.PredefinedKeysCount) {
@@ -49,28 +48,28 @@ func gen(ctx context.Context, n, keyLen int, used UsedKeysRepository, unused Unu
 	for i := 0; i < n; {
 		rndKey, err := randStringRunes(keyLen)
 		if err != nil {
-			log.Error().Err(err).Msg("failed get random string")
+			slog.Error("failed get random string", slog.Any("err", err))
 			break
 		}
 		existed, err := used.Exists(ctx, rndKey)
 		if err != nil {
-			log.Error().Err(err).Msg("failed check used key existence")
+			slog.Error("failed check used key existence", slog.Any("err", err))
 			break
 		}
 		if existed {
-			log.Debug().Msgf("key %s already exists in used keys repository - try another one", rndKey)
+			slog.Debug("key already exists in used keys repository - try another one", slog.String("key", rndKey))
 			continue
 		}
 		stored, err := unused.Store(ctx, rndKey)
 		if err != nil {
-			log.Error().Err(err).Msg("failed store new key")
+			slog.Error("failed store new key", slog.Any("err", err))
 			break
 		}
 		if stored == 0 {
-			log.Debug().Msgf("key %s already exists in unused keys repository - try another one", rndKey)
+			slog.Debug("key already exists in unused keys repository - try another one", slog.String("key", rndKey))
 			continue
 		}
-		log.Debug().Msgf("stored new key %s", rndKey)
+		slog.Debug("stored new key", slog.String("key", rndKey))
 		i++
 	}
 }
