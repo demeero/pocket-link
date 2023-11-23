@@ -75,6 +75,7 @@ func main() {
 		RuntimeMetrics:        true,
 		HostMetrics:           true,
 		Headers:               meterCfg.BasicAuthHeader(),
+		Exclusions:            meterCfg.Exclusions,
 	})
 	if err != nil {
 		log.Fatalf("failed init metrics: %s", err)
