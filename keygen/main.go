@@ -58,7 +58,7 @@ func main() {
 		OTELHTTPPathPrefix:    traceCfg.PathPrefix,
 		Insecure:              traceCfg.Insecure,
 		Headers:               traceCfg.BasicAuthHeader(),
-		SpanExclusions:        traceCfg.Exclusions,
+		SpanExclusions:        traceCfg.FormattedExclusions(),
 	})
 	if err != nil {
 		log.Fatalf("failed init tracer: %s", err)
@@ -75,7 +75,7 @@ func main() {
 		RuntimeMetrics:        true,
 		HostMetrics:           true,
 		Headers:               meterCfg.BasicAuthHeader(),
-		Exclusions:            meterCfg.Exclusions,
+		Exclusions:            meterCfg.FormattedExclusions(),
 	})
 	if err != nil {
 		log.Fatalf("failed init metrics: %s", err)
