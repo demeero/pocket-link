@@ -14,7 +14,12 @@ import (
 	"github.com/demeero/bricks/otelbrick"
 	"github.com/demeero/bricks/slogbrick"
 	"github.com/demeero/pocket-link/keygen/grpcsvc"
+	"github.com/demeero/pocket-link/keygen/key"
+	mongorepo "github.com/demeero/pocket-link/keygen/repository/mongo"
+	redisrepo "github.com/demeero/pocket-link/keygen/repository/redis"
+	pb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/keygen/v1beta1"
 	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,14 +27,9 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
-
-	pb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/keygen/v1beta1"
-
-	"github.com/demeero/pocket-link/keygen/key"
-	mongorepo "github.com/demeero/pocket-link/keygen/repository/mongo"
-	redisrepo "github.com/demeero/pocket-link/keygen/repository/redis"
-	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -120,18 +120,21 @@ func grpcServ(cfg configbrick.GRPC, k *key.Keys) func() {
 		reflection.Register(grpcSrv)
 	}
 	pb.RegisterKeygenServiceServer(grpcSrv, grpcsvc.New(k))
-
+	healthSrv := health.NewServer()
+	grpc_health_v1.RegisterHealthServer(grpcSrv, healthSrv)
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
 	if err != nil {
 		log.Fatal("failed listen GRPC port", err)
 	}
 	go func() {
 		slog.Info("init grpc srv")
+		healthSrv.SetServingStatus("keygen", grpc_health_v1.HealthCheckResponse_SERVING)
 		if err := grpcSrv.Serve(lis); err != nil {
 			log.Fatal("failed serve GRPC", err)
 		}
 	}()
 	return func() {
+		healthSrv.Shutdown()
 		grpcSrv.GracefulStop()
 	}
 }
