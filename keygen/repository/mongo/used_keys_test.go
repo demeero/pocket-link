@@ -14,7 +14,6 @@ import (
 // nolint:govet
 func TestUsedKeys_Exists(t *testing.T) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mt.Close()
 
 	k := "existed_test_key"
 
@@ -57,7 +56,6 @@ func TestUsedKeys_Exists(t *testing.T) {
 // nolint:govet
 func TestUsedKeys_Store(t *testing.T) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mt.Close()
 
 	k := "test_key"
 

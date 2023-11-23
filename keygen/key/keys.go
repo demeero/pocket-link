@@ -7,12 +7,8 @@ import (
 	"time"
 
 	"github.com/avast/retry-go/v3"
+	"github.com/demeero/bricks/errbrick"
 	"github.com/rs/zerolog/log"
-)
-
-var (
-	ErrKeyAlreadyUsed = errors.New("key already used")
-	ErrKeyNotFound    = errors.New("key not found")
 )
 
 // Key is a key for short link.
@@ -70,7 +66,7 @@ func (k *Keys) Use(ctx context.Context) (Key, error) {
 			return fmt.Errorf("failed store key: %w", err)
 		}
 		if !stored {
-			return ErrKeyAlreadyUsed
+			return fmt.Errorf("%w: key already exist", errbrick.ErrConflict)
 		}
 
 		result.ExpiresAt = expiresAt
@@ -79,11 +75,11 @@ func (k *Keys) Use(ctx context.Context) (Key, error) {
 	}
 
 	retryCond := func(err error) bool {
-		if errors.Is(err, ErrKeyAlreadyUsed) {
+		if errors.Is(err, errbrick.ErrConflict) {
 			log.Ctx(ctx).Info().Msg("expected free key is already in use - retry")
 			return true
 		}
-		if errors.Is(err, ErrKeyNotFound) {
+		if errors.Is(err, errbrick.ErrNotFound) {
 			log.Ctx(ctx).Info().Msg("no free keys - retry")
 			return true
 		}

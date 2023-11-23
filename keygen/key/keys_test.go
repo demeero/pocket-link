@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/demeero/bricks/errbrick"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -74,7 +75,7 @@ func TestKeys_Use_NoFreeKeys_Retry(t *testing.T) {
 	testKey := "testKey1"
 	ctx := context.Background()
 
-	unusedRepo.EXPECT().LoadAndDelete(ctx).Return("", ErrKeyNotFound)
+	unusedRepo.EXPECT().LoadAndDelete(ctx).Return("", errbrick.ErrNotFound)
 	unusedRepo.EXPECT().LoadAndDelete(ctx).Return(testKey, nil)
 	usedRepo.EXPECT().Store(ctx, testKey, gomock.Any()).Return(true, nil)
 	keys := New(time.Hour, usedRepo, unusedRepo)
@@ -117,7 +118,7 @@ func TestKeys_Use_CancelCtx(t *testing.T) {
 
 	unusedRepo.EXPECT().LoadAndDelete(ctx).DoAndReturn(func(context.Context) (string, error) {
 		cancel()
-		return "", ErrKeyNotFound
+		return "", errbrick.ErrNotFound
 	})
 	keys := New(time.Hour, usedRepo, unusedRepo)
 

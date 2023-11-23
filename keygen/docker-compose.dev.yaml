@@ -6,7 +6,7 @@ services:
       dockerfile: dev.Dockerfile
     container_name: keygen
     volumes:
-      - ./:/workdir
+      - ./:/app
     ports:
       - "8080:8080"
 

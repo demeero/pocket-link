@@ -3,21 +3,20 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"log/slog"
 	"net"
 	"os"
 	"os/signal"
-	"syscall"
-	"time"
 
-	"github.com/demeero/pocket-link/bricks"
-	"github.com/demeero/pocket-link/bricks/grpc/interceptor"
-	"github.com/demeero/pocket-link/bricks/metric"
-	"github.com/demeero/pocket-link/bricks/trace"
-	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/demeero/bricks/configbrick"
+	"github.com/demeero/bricks/grpcbrick"
+	"github.com/demeero/bricks/otelbrick"
+	"github.com/demeero/bricks/slogbrick"
+	"github.com/demeero/pocket-link/keygen/grpcsvc"
 	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
-	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
@@ -27,8 +26,6 @@ import (
 
 	pb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/keygen/v1beta1"
 
-	"github.com/demeero/pocket-link/keygen/config"
-	"github.com/demeero/pocket-link/keygen/controller/rpc"
 	"github.com/demeero/pocket-link/keygen/key"
 	mongorepo "github.com/demeero/pocket-link/keygen/repository/mongo"
 	redisrepo "github.com/demeero/pocket-link/keygen/repository/redis"
@@ -38,132 +35,140 @@ import (
 func main() {
 	// Load environment variables from a `.env` file if one exists
 	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
-		log.Fatal().Err(err).Msg("failed load .env file")
+		log.Fatal("failed load .env file", err)
 	}
 
-	cfg := config.New()
-	bricks.ConfigureLogger(cfg.Log)
-	log.Debug().Any("value", cfg).Msg("parsed config")
+	cfg := Config{}
+	configbrick.LoadConfig(&cfg, os.Getenv("LOG_CONFIG") == "true")
+	slogbrick.Configure(slogbrick.Config{
+		Level:     cfg.Log.Level,
+		AddSource: cfg.Log.AddSource,
+		JSON:      cfg.Log.JSON,
+	})
 
-	traceShutdown, err := trace.Init(context.Background())
+	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
+
+	traceCfg := cfg.OTEL.Trace
+	traceShutdown, err := otelbrick.InitTrace(ctx, otelbrick.TraceConfig{
+		ServiceName:           cfg.ServiceName,
+		ServiceNamespace:      cfg.ServiceNamespace,
+		DeploymentEnvironment: cfg.Env,
+		OTELHTTPEndpoint:      traceCfg.Endpoint,
+		OTELHTTPPathPrefix:    traceCfg.PathPrefix,
+		Insecure:              traceCfg.Insecure,
+		Headers:               traceCfg.BasicAuthHeader(),
+	})
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed init tracing")
+		log.Fatalf("failed init tracer: %s", err)
 	}
-	metricShutdown, err := metric.Init(context.Background())
+
+	meterCfg := cfg.OTEL.Meter
+	meterShutdown, err := otelbrick.InitMeter(ctx, otelbrick.MeterConfig{
+		ServiceName:           cfg.ServiceName,
+		ServiceNamespace:      cfg.ServiceNamespace,
+		DeploymentEnvironment: cfg.Env,
+		OTELHTTPEndpoint:      meterCfg.Endpoint,
+		OTELHTTPPathPrefix:    meterCfg.PathPrefix,
+		Insecure:              meterCfg.Insecure,
+		RuntimeMetrics:        true,
+		HostMetrics:           true,
+		Headers:               meterCfg.BasicAuthHeader(),
+	})
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed init metric")
+		log.Fatalf("failed init metrics: %s", err)
 	}
 
 	usedRepo, err := createUsedKeysRepo(cfg)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed create used keys repository")
+		log.Fatal("failed create used keys repository", err)
 	}
 	unusedRepo := createUnusedKeysRepo(cfg.RedisUnusedKeys)
 
-	genCtx, genCancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	genCfg := key.GeneratorConfig{
 		PredefinedKeysCount: cfg.Generator.PredefinedKeysCount,
 		Delay:               cfg.Generator.Delay,
 		KeyLen:              cfg.Generator.KeyLen,
 	}
-	go key.Generate(genCtx, genCfg, usedRepo, unusedRepo)
+	go key.Generate(ctx, genCfg, usedRepo, unusedRepo)
 
 	grpcSrvShutdown := grpcServ(cfg.GRPC, key.New(cfg.Keys.TTL, usedRepo, unusedRepo))
 
-	waitForShutdown(cfg.ShutdownTimeout, func(ctx context.Context) {
-		genCancel()
-
-		log.Info().Msg("start grpc srv shutdown")
-		grpcSrvShutdown()
-		log.Info().Msg("grpc srv finished")
-
-		log.Info().Msg("start trace shutdown")
-		if err = traceShutdown(ctx); err != nil {
-			log.Error().Err(err).Msg("failed shutdown tracing")
-		}
-
-		log.Info().Msg("start metric shutdown")
-		metricShutdown(ctx)
-
-	})
-}
-
-func waitForShutdown(timeout time.Duration, shutdownFunc func(ctx context.Context)) {
-	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
-	<-sigint
-	log.Info().Msg("start shutdown")
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	shutdownFunc(ctx)
-	log.Info().Msg("shutdown completed")
-}
-
-func grpcServ(cfg config.GRPC, k *key.Keys) func() {
-	grpcServ := grpc.NewServer(
-		grpcmiddleware.WithUnaryServerChain(
-			grpcrecovery.UnaryServerInterceptor(),
-			otelgrpc.UnaryServerInterceptor(),
-			interceptor.LogUnaryServerInterceptor(),
-		),
-	)
-	if cfg.EnableReflection {
-		reflection.Register(grpcServ)
+	<-ctx.Done()
+	slog.Info("shutting down")
+	grpcSrvShutdown()
+	if err := meterShutdown(context.Background()); err != nil {
+		slog.Error("failed shutdown meter provider", slog.Any("err", err))
 	}
-	pb.RegisterKeygenServiceServer(grpcServ, rpc.New(k))
+	if err := traceShutdown(context.Background()); err != nil {
+		slog.Error("failed shutdown tracer provider", slog.Any("err", err))
+	}
+}
+
+func grpcServ(cfg configbrick.GRPC, k *key.Keys) func() {
+	interceptors := []grpc.UnaryServerInterceptor{
+		grpcrecovery.UnaryServerInterceptor(),
+		grpcbrick.SlogCtxUnaryServerInterceptor(true),
+	}
+	if cfg.AccessLog {
+		interceptors = append(interceptors, grpcbrick.SlogUnaryServerInterceptor(slog.LevelDebug, nil))
+	}
+	grpcSrv := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()), grpc.ChainUnaryInterceptor(interceptors...))
+	if cfg.EnableReflection {
+		reflection.Register(grpcSrv)
+	}
+	pb.RegisterKeygenServiceServer(grpcSrv, grpcsvc.New(k))
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed listen GRPC port")
+		log.Fatal("failed listen GRPC port", err)
 	}
 	go func() {
-		log.Info().Msg("init grpc srv")
-		if err := grpcServ.Serve(lis); err != nil {
-			log.Fatal().Err(err).Msg("failed serve GRPC")
+		slog.Info("init grpc srv")
+		if err := grpcSrv.Serve(lis); err != nil {
+			log.Fatal("failed serve GRPC", err)
 		}
 	}()
 	return func() {
-		grpcServ.GracefulStop()
+		grpcSrv.GracefulStop()
 	}
 }
 
-func createUnusedKeysRepo(cfg config.RedisUnusedKeys) *redisrepo.UnusedKeys {
+func createUnusedKeysRepo(cfg configbrick.Redis) *redisrepo.UnusedKeys {
 	client := redis.NewClient(&redis.Options{
-		Addr: cfg.Addr,
-		DB:   int(cfg.DB),
+		Addr:     cfg.Addr,
+		DB:       cfg.DB,
+		Password: cfg.Password,
 	})
 	if err := redisotel.InstrumentTracing(client); err != nil {
-		log.Error().Err(err).Msg("failed instrument tracing to redis client for unused keys")
-	}
-	if err := redisotel.InstrumentMetrics(client); err != nil {
-		log.Error().Err(err).Msg("failed instrument metrics to redis client for unused keys")
+		slog.Error("failed instrument tracing to redis client for unused keys", slog.Any("err", err))
 	}
 	return redisrepo.NewUnusedKeys(client)
 }
 
-func createUsedKeysRepo(cfg config.Config) (key.UsedKeysRepository, error) {
+func createUsedKeysRepo(cfg Config) (key.UsedKeysRepository, error) {
 	if cfg.UsedKeysRepositoryType == "" {
-		cfg.UsedKeysRepositoryType = config.UsedKeysRepositoryTypeRedis
+		cfg.UsedKeysRepositoryType = UsedKeysRepositoryTypeRedis
 	}
 	switch cfg.UsedKeysRepositoryType {
-	case config.UsedKeysRepositoryTypeMongo:
-		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	case UsedKeysRepositoryTypeMongo:
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.MongoUsedKeys.InitialConnectTimeout)
 		defer cancel()
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.MongoUsedKeys.URI).SetMonitor(otelmongo.NewMonitor()))
 		if err != nil {
 			return nil, fmt.Errorf("failed connect to MongoDB: %w", err)
 		}
 		return mongorepo.NewUsedKeys(client.Database("pocket-link"))
-	case config.UsedKeysRepositoryTypeRedis:
+	case UsedKeysRepositoryTypeRedis:
 		client := redis.NewClient(&redis.Options{
-			Addr: cfg.RedisUsedKeys.Addr,
-			DB:   int(cfg.RedisUsedKeys.DB),
+			Addr:     cfg.RedisUsedKeys.Addr,
+			DB:       cfg.RedisUsedKeys.DB,
+			Password: cfg.RedisUsedKeys.Password,
 		})
 		if err := redisotel.InstrumentTracing(client); err != nil {
-			log.Error().Err(err).Msg("failed instrument tracing to redis client for used keys")
-		}
-		if err := redisotel.InstrumentMetrics(client); err != nil {
-			log.Error().Err(err).Msg("failed instrument metrics to redis client for used keys")
+			slog.Error("failed instrument tracing to redis client for used keys", slog.Any("err", err))
 		}
 		return redisrepo.NewUsedKeys(client), nil
 	default:

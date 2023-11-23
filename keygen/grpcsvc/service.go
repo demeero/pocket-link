@@ -1,4 +1,4 @@
-package rpc
+package grpcsvc
 
 import (
 	"context"
@@ -10,17 +10,17 @@ import (
 	"github.com/demeero/pocket-link/keygen/key"
 )
 
-type Controller struct {
+type Service struct {
 	pb.KeygenServiceServer
 	k *key.Keys
 }
 
-func New(k *key.Keys) *Controller {
-	return &Controller{k: k}
+func New(k *key.Keys) *Service {
+	return &Service{k: k}
 }
 
-func (c *Controller) GenerateKey(ctx context.Context, _ *pb.GenerateKeyRequest) (*pb.GenerateKeyResponse, error) {
-	result, err := c.k.Use(ctx)
+func (s *Service) GenerateKey(ctx context.Context, _ *pb.GenerateKeyRequest) (*pb.GenerateKeyResponse, error) {
+	result, err := s.k.Use(ctx)
 	if err != nil {
 		return nil, err
 	}

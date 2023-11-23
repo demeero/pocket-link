@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/demeero/bricks/errbrick"
 	"github.com/redis/go-redis/v9"
-
-	"github.com/demeero/pocket-link/keygen/key"
 )
 
 const unusedSetName = "set_unusedkeys"
@@ -24,7 +23,7 @@ func NewUnusedKeys(rds redis.Cmdable) *UnusedKeys {
 func (u *UnusedKeys) LoadAndDelete(ctx context.Context) (string, error) {
 	result, err := u.rds.SPop(ctx, unusedSetName).Result()
 	if errors.Is(err, redis.Nil) {
-		return "", key.ErrKeyNotFound
+		return "", errbrick.ErrNotFound
 	}
 	if err != nil {
 		return "", err

@@ -4,13 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/alicebob/miniredis"
+	"github.com/alicebob/miniredis/v2"
+	"github.com/demeero/bricks/errbrick"
 	"github.com/go-redis/redismock/v9"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/demeero/pocket-link/keygen/key"
 )
 
 func TestUnusedKeys_LoadAndDelete(t *testing.T) {
@@ -34,7 +33,7 @@ func TestUnusedKeys_LoadAndDelete_EmptySet(t *testing.T) {
 
 	uk := NewUnusedKeys(client)
 	actual, err := uk.LoadAndDelete(context.Background())
-	assert.Equal(t, key.ErrKeyNotFound, err)
+	assert.Equal(t, errbrick.ErrNotFound, err)
 	assert.Empty(t, actual)
 }
 

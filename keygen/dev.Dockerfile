@@ -1,7 +1,7 @@
-FROM golang:1.20-alpine
+FROM golang:1.21-alpine
 
-RUN go install github.com/cosmtrek/air@v1.42.0
+RUN go install github.com/cosmtrek/air@v1.49.0
 
-WORKDIR /workdir
+WORKDIR /app
 
 CMD ["air", "-c", ".air.toml"]
