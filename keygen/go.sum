@@ -49,6 +49,8 @@ github.com/demeero/bricks v0.0.0-20231123230621-2cc82efdf8ce h1:Z1qmhKLGhPOqtJ9f
 github.com/demeero/bricks v0.0.0-20231123230621-2cc82efdf8ce/go.mod h1:pEbfHApk2rBQSsQsvfWPEGpWi0unmTesbQDEYRQVYb4=
 github.com/demeero/bricks v0.0.0-20231123232308-a7273cd19016 h1:ICW4hrMUiGyXy4ubeh+F0KrF2Gyd5a29ToG6Gm6k+3o=
 github.com/demeero/bricks v0.0.0-20231123232308-a7273cd19016/go.mod h1:pEbfHApk2rBQSsQsvfWPEGpWi0unmTesbQDEYRQVYb4=
+github.com/demeero/bricks v0.0.0-20231123233139-4ba626da70a7 h1:p4RG+/YY5UW7/9EP6xq0aN7/xJwTKwFPoFLOHgcxBiQ=
+github.com/demeero/bricks v0.0.0-20231123233139-4ba626da70a7/go.mod h1:pEbfHApk2rBQSsQsvfWPEGpWi0unmTesbQDEYRQVYb4=
 github.com/demeero/pocket-link/proto/gen/go v0.0.0-20230411231352-c33120754a41 h1:Yu0NmvIY/ZLJqJnggRzzf5D6TlwEz2VyQUcVlCiaDAE=
 github.com/demeero/pocket-link/proto/gen/go v0.0.0-20230411231352-c33120754a41/go.mod h1:podYehWV93iy7HLpRjDGNxX6k6n8sIpdIhfDSDCji5M=
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f h1:lO4WD4F/rVNCu3HqELle0jiPLLBs70cWOduZpkS1E78=
