@@ -4,18 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
-	"time"
 
-	"github.com/demeero/pocket-link/bricks"
-	"github.com/demeero/pocket-link/bricks/grpc/interceptor"
-	"github.com/demeero/pocket-link/bricks/metric"
-	"github.com/demeero/pocket-link/bricks/trace"
-	"github.com/demeero/pocket-link/links/config"
+	"github.com/demeero/bricks/configbrick"
+	"github.com/demeero/bricks/grpcbrick"
+	"github.com/demeero/bricks/otelbrick"
+	"github.com/demeero/bricks/slogbrick"
 	"github.com/demeero/pocket-link/links/controller/rest"
 	"github.com/demeero/pocket-link/links/controller/rpc"
 	"github.com/demeero/pocket-link/links/repository"
@@ -28,7 +27,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	echolog "github.com/labstack/gommon/log"
-	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
@@ -40,83 +38,101 @@ import (
 func main() {
 	// Load environment variables from a `.env` file if one exists
 	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
-		log.Fatal().Err(err).Msg("failed load .env file")
+		log.Fatal("failed load .env file", err)
 	}
 
-	cfg := config.New()
-	bricks.ConfigureLogger(cfg.Log)
-	log.Debug().Any("value", cfg).Msg("parsed config")
+	cfg := config{}
+	configbrick.LoadConfig(&cfg, os.Getenv("LOG_CONFIG") == "true")
+	slogbrick.Configure(slogbrick.Config{
+		Level:     cfg.Log.Level,
+		AddSource: cfg.Log.AddSource,
+		JSON:      cfg.Log.JSON,
+	})
 
-	traceShutdown, err := trace.Init(context.Background())
+	ctx := context.Background()
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
+
+	traceCfg := cfg.OTEL.Trace
+	traceShutdown, err := otelbrick.InitTrace(ctx, otelbrick.TraceConfig{
+		ServiceName:           cfg.ServiceName,
+		ServiceNamespace:      cfg.ServiceNamespace,
+		DeploymentEnvironment: cfg.Env,
+		OTELHTTPEndpoint:      traceCfg.Endpoint,
+		OTELHTTPPathPrefix:    traceCfg.PathPrefix,
+		Insecure:              traceCfg.Insecure,
+		Headers:               traceCfg.BasicAuthHeader(),
+	})
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed init tracing")
+		log.Fatalf("failed init tracer: %s", err)
 	}
-	metricsShutdown, err := metric.Init(context.Background())
+
+	meterCfg := cfg.OTEL.Meter
+	meterShutdown, err := otelbrick.InitMeter(ctx, otelbrick.MeterConfig{
+		ServiceName:           cfg.ServiceName,
+		ServiceNamespace:      cfg.ServiceNamespace,
+		DeploymentEnvironment: cfg.Env,
+		OTELHTTPEndpoint:      meterCfg.Endpoint,
+		OTELHTTPPathPrefix:    meterCfg.PathPrefix,
+		Insecure:              meterCfg.Insecure,
+		RuntimeMetrics:        true,
+		HostMetrics:           true,
+		Headers:               meterCfg.BasicAuthHeader(),
+	})
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed init metrics")
+		log.Fatalf("failed init metrics: %s", err)
 	}
 
 	mClient, mShutdown := mongoDB(cfg.Mongo)
 	repo, err := repository.New(mClient.Database("pocket-link"))
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed create repository")
+		log.Fatalf("failed create repository: %s", err)
 	}
 
-	keygenClientConn, err := grpc.Dial(cfg.Keygen.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
+	keygenClientConn, err := grpc.Dial(cfg.Keygen.Addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed create GRPC keygen connection")
+		log.Fatalf("failed create GRPC keygen connection: %s", err)
 	}
 
 	svc := service.New(repo, keygenpb.NewKeygenServiceClient(keygenClientConn))
 
-	httpShutdown := httpSrv(cfg.HTTP, svc)
+	httpShutdown := httpSrv(cfg.ServiceName, cfg.HTTP, svc)
 	grpcShutdown := grpcSrv(cfg.GRPC, svc)
 
-	waitForShutdown(cfg.ShutdownTimeout, func(ctx context.Context) {
-		log.Info().Msg("shutdown tracing")
-		if err := traceShutdown(ctx); err != nil {
-			log.Error().Err(err).Msg("failed shutdown tracing")
-		}
-		log.Info().Msg("shutdown metrics")
-		metricsShutdown(ctx)
-		log.Info().Msg("shutdown HTTP")
-		httpShutdown(ctx)
-		log.Info().Msg("shutdown GRPC")
-		if err := keygenClientConn.Close(); err != nil {
-			log.Error().Err(err).Msg("failed close keygen client GRPC connection")
-		}
-		grpcShutdown()
-		log.Info().Msg("shutdown MongoDB")
-		mShutdown(ctx)
-	})
-}
-
-func waitForShutdown(timeout time.Duration, shutdownFunc func(ctx context.Context)) {
-	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
-	<-sigint
-	log.Info().Msg("start shutdown")
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	shutdownFunc(ctx)
-	log.Info().Msg("shutdown completed")
+	<-ctx.Done()
+	slog.Info("shutting down")
+	httpShutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.HTTP.ShutdownTimeout)
+	defer cancel()
+	httpShutdown(httpShutdownCtx)
+	grpcShutdown()
+	if err := meterShutdown(context.Background()); err != nil {
+		slog.Error("failed shutdown meter provider", slog.Any("err", err))
+	}
+	if err := traceShutdown(context.Background()); err != nil {
+		slog.Error("failed shutdown tracer provider", slog.Any("err", err))
+	}
+	if err := keygenClientConn.Close(); err != nil {
+		slog.Error("failed shutdown grpc links connection", slog.Any("err", err))
+	}
+	mShutdown(context.Background())
 }
 
-func mongoDB(cfg config.Mongo) (client *mongo.Client, shutdown func(ctx context.Context)) {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+func mongoDB(cfg configbrick.Mongo) (client *mongo.Client, shutdown func(ctx context.Context)) {
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.InitialConnectTimeout)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.URI).SetMonitor(otelmongo.NewMonitor()))
 	cancel()
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed connect to mongo")
+		log.Fatalf("failed connect to mongo: %s", err)
 	}
 	return client, func(ctx context.Context) {
 		if err := client.Disconnect(ctx); err != nil {
-			log.Error().Err(err).Msg("failed disconnect from mongo")
+			slog.Error("failed disconnect from mongo", slog.Any("err", err))
 		}
 	}
 }
 
-func httpSrv(cfg config.HTTP, s *service.Service) func(ctx context.Context) {
+func httpSrv(svcName string, cfg configbrick.HTTP, s *service.Service) func(ctx context.Context) {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
@@ -124,29 +140,30 @@ func httpSrv(cfg config.HTTP, s *service.Service) func(ctx context.Context) {
 	e.Server.ReadTimeout = cfg.ReadTimeout
 	e.Server.ReadHeaderTimeout = cfg.ReadHeaderTimeout
 	e.Server.WriteTimeout = cfg.WriteTimeout
-	rest.Setup(e, s)
+	rest.Setup(svcName, e, s)
 	go func() {
-		log.Info().Msg("init HTTP srv")
+		slog.Info("init HTTP srv")
 		err := e.Start(fmt.Sprintf(":%d", cfg.Port))
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Error().Err(err).Msg("failed http serve")
+			log.Fatalf("failed http serve: %s", err)
 		}
 	}()
 	return func(ctx context.Context) {
 		if err := e.Shutdown(ctx); err != nil {
-			log.Error().Err(err).Msg("failed shutdown http srv")
+			slog.Error("failed shutdown http srv", slog.Any("err", err))
 		}
 	}
 }
 
-func grpcSrv(cfg config.GRPC, s *service.Service) func() {
-	grpcServ := grpc.NewServer(
-		grpc.ChainUnaryInterceptor(
-			grpcrecovery.UnaryServerInterceptor(),
-			otelgrpc.UnaryServerInterceptor(),
-			interceptor.LogUnaryServerInterceptor(),
-		),
-	)
+func grpcSrv(cfg configbrick.GRPC, s *service.Service) func() {
+	interceptors := []grpc.UnaryServerInterceptor{
+		grpcrecovery.UnaryServerInterceptor(),
+		grpcbrick.SlogCtxUnaryServerInterceptor(true),
+	}
+	if cfg.AccessLog {
+		interceptors = append(interceptors, grpcbrick.SlogUnaryServerInterceptor(slog.LevelDebug, nil))
+	}
+	grpcServ := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()), grpc.ChainUnaryInterceptor(interceptors...))
 	if cfg.EnableReflection {
 		reflection.Register(grpcServ)
 	}
@@ -154,12 +171,12 @@ func grpcSrv(cfg config.GRPC, s *service.Service) func() {
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed listen GRPC port")
+		log.Fatalf("failed listen GRPC port: %s", err)
 	}
 	go func() {
-		log.Info().Msg("init grpc srv")
+		slog.Info("init grpc srv")
 		if err := grpcServ.Serve(lis); err != nil {
-			log.Fatal().Err(err).Msg("failed serve GRPC")
+			log.Fatalf("failed serve GRPC: %s", err)
 		}
 	}()
 	return func() {

@@ -2,18 +2,13 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/demeero/bricks/errbrick"
 
 	keygenpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/keygen/v1beta1"
-)
-
-var (
-	ErrInvalid  = errors.New("invalid data")
-	ErrNotFound = errors.New("not found")
 )
 
 type Link struct {
@@ -42,7 +37,7 @@ func New(repo Repository, kc keygenpb.KeygenServiceClient) *Service {
 
 func (s *Service) Create(ctx context.Context, original string) (Link, error) {
 	if !govalidator.IsURL(original) {
-		return Link{}, fmt.Errorf("%w: incorrect url format: %s", ErrInvalid, original)
+		return Link{}, fmt.Errorf("%w: incorrect url format: %s", errbrick.ErrInvalidData, original)
 	}
 	resp, err := s.keygenClient.GenerateKey(ctx, &keygenpb.GenerateKeyRequest{})
 	if err != nil {

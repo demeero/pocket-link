@@ -1,12 +1,14 @@
-FROM golang:1.20-alpine AS builder
+FROM golang:1.21-alpine AS builder
 
-WORKDIR /src/links
+WORKDIR /usr/local/src/links
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/links /src/links/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /usr/local/bin/links ./*.go
 
 FROM alpine:3 AS runner
-COPY --from=builder /bin/links /bin/links
-ENTRYPOINT ["/bin/links"]
+COPY --from=builder /usr/local/bin/links /usr/local/bin/links
+ENTRYPOINT ["/usr/local/bin/links"]
+
+

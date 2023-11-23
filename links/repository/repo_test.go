@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/demeero/bricks/errbrick"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,7 +18,6 @@ import (
 // nolint:govet
 func TestRepository_Create(t *testing.T) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mt.Close()
 
 	l := service.Link{
 		Shortened: "shortened_test",
@@ -54,7 +54,6 @@ func TestRepository_Create(t *testing.T) {
 // nolint:govet
 func TestRepository_LoadByID(t *testing.T) {
 	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mt.Close()
 
 	shortened := "shortened_test"
 	expAt := time.Now().Add(time.Hour).UTC()
@@ -106,7 +105,7 @@ func TestRepository_LoadByID(t *testing.T) {
 
 		mt.AddMockResponses(mtest.CreateCursorResponse(0, "foo.bar", mtest.FirstBatch))
 		actual, err := repo.LoadByID(context.Background(), shortened)
-		assert.ErrorIs(mt, err, service.ErrNotFound)
+		assert.ErrorIs(mt, err, errbrick.ErrNotFound)
 		assert.Zero(mt, actual)
 	})
 }

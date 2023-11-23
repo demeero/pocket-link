@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/demeero/bricks/errbrick"
 	pb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -56,7 +57,7 @@ func TestController_GetLink_ErrNotFound(t *testing.T) {
 
 	mockRepo := service.NewMockRepository(ctrl)
 	mockKGCli := service.NewMockKeygenServiceClient(ctrl)
-	mockRepo.EXPECT().LoadByID(ctx, short).Return(service.Link{}, service.ErrNotFound)
+	mockRepo.EXPECT().LoadByID(ctx, short).Return(service.Link{}, errbrick.ErrNotFound)
 
 	c := New(service.New(mockRepo, mockKGCli))
 

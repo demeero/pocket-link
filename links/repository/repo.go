@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/demeero/bricks/errbrick"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -55,7 +56,7 @@ func (r *Repository) Create(ctx context.Context, link service.Link) (service.Lin
 func (r *Repository) LoadByID(ctx context.Context, shortened string) (service.Link, error) {
 	res := r.coll.FindOne(ctx, bson.M{"_id": shortened})
 	if errors.Is(res.Err(), mongo.ErrNoDocuments) {
-		return service.Link{}, fmt.Errorf("%w: %s", service.ErrNotFound, shortened)
+		return service.Link{}, fmt.Errorf("%w: %s", errbrick.ErrNotFound, shortened)
 	}
 	lm := linkMongo{}
 	if err := res.Decode(&lm); err != nil {

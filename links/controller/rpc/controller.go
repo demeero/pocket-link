@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/demeero/bricks/errbrick"
 	pb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
 
 	"google.golang.org/grpc/codes"
@@ -24,7 +25,7 @@ func New(s *service.Service) *Controller {
 
 func (c *Controller) GetLink(ctx context.Context, req *pb.GetLinkRequest) (*pb.GetLinkResponse, error) {
 	l, err := c.svc.Get(ctx, req.GetShortened())
-	if errors.Is(err, service.ErrNotFound) {
+	if errors.Is(err, errbrick.ErrNotFound) {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 	if err != nil {

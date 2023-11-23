@@ -27,7 +27,9 @@ services:
       - "8083:8080"
 
   frontend:
-    image: demeero/pocket-link-frontend
+    build:
+      context: ./frontend
+    #    image: demeero/pocket-link-frontend
     ports:
       - "8084:80"
 
@@ -58,12 +60,12 @@ services:
 
   redis-lru:
     image: redis:7-alpine3.17
-    command: [ "--port 6380", "--maxmemory 2mb", "--maxmemory-policy allkeys-lru" ]
+    command: [ "--maxmemory 2mb", "--maxmemory-policy allkeys-lru" ]
     ports:
-      - "6480:6380"
+      - "6480:6379"
 
   mongo:
-    image: mongo:6
+    image: mongo:4
     ports:
       - "27018:27017"
     volumes:
