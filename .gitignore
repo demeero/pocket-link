@@ -3,3 +3,4 @@
 !*.secret
 _deploy_/k8s/keygen.env
 _deploy_/k8s/links.env
+_deploy_/k8s/redirects.env
