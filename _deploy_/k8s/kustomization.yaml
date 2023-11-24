@@ -16,6 +16,7 @@ commonLabels:
 labels:
   - pairs:
       app.kubernetes.io/version: latest # will be overriden by replacement below
+      promtail.scrape: "true"
     includeTemplates: true
     includeSelectors: false
 
