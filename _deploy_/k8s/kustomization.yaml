@@ -4,6 +4,7 @@ namespace: pocket-link
 
 resources:
   - keygen.yaml
+  - links.yaml
 
 # these labels will be automatically included in label selectors
 commonLabels:
@@ -20,6 +21,9 @@ configMapGenerator:
   - name: keygen
     envs:
       - keygen.env
+  - name: links
+    envs:
+      - links.env
 
 replacements:
   - source:

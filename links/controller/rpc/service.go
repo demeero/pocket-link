@@ -14,17 +14,17 @@ import (
 	"github.com/demeero/pocket-link/links/service"
 )
 
-type Controller struct {
+type Service struct {
 	pb.UnimplementedLinkServiceServer
 	svc *service.Service
 }
 
-func New(s *service.Service) *Controller {
-	return &Controller{svc: s}
+func New(s *service.Service) *Service {
+	return &Service{svc: s}
 }
 
-func (c *Controller) GetLink(ctx context.Context, req *pb.GetLinkRequest) (*pb.GetLinkResponse, error) {
-	l, err := c.svc.Get(ctx, req.GetShortened())
+func (s *Service) GetLink(ctx context.Context, req *pb.GetLinkRequest) (*pb.GetLinkResponse, error) {
+	l, err := s.svc.Get(ctx, req.GetShortened())
 	if errors.Is(err, errbrick.ErrNotFound) {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}

@@ -61,6 +61,7 @@ func main() {
 		OTELHTTPPathPrefix:    traceCfg.PathPrefix,
 		Insecure:              traceCfg.Insecure,
 		Headers:               traceCfg.BasicAuthHeader(),
+		SpanExclusions:        traceCfg.FormattedExclusions(),
 	})
 	if err != nil {
 		log.Fatalf("failed init tracer: %s", err)
@@ -77,6 +78,7 @@ func main() {
 		RuntimeMetrics:        true,
 		HostMetrics:           true,
 		Headers:               meterCfg.BasicAuthHeader(),
+		Exclusions:            meterCfg.FormattedExclusions(),
 	})
 	if err != nil {
 		log.Fatalf("failed init metrics: %s", err)
@@ -161,7 +163,9 @@ func grpcSrv(cfg configbrick.GRPC, s *service.Service) func() {
 		grpcbrick.SlogCtxUnaryServerInterceptor(true),
 	}
 	if cfg.AccessLog {
-		interceptors = append(interceptors, grpcbrick.SlogUnaryServerInterceptor(slog.LevelDebug, nil))
+		interceptors = append(interceptors, grpcbrick.SlogUnaryServerInterceptor(slog.LevelDebug, func(ctx context.Context, _ interface{}, info *grpc.UnaryServerInfo) bool {
+			return info.FullMethod == "/grpc.health.v1.Health/Check"
+		}))
 	}
 	grpcServ := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()), grpc.ChainUnaryInterceptor(interceptors...))
 	if cfg.EnableReflection {
