@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"time"
 
 	"github.com/demeero/bricks/errbrick"
 	"github.com/demeero/bricks/slogbrick"
@@ -58,11 +59,13 @@ func (l *Links) lookup(ctx context.Context, shortened string) (string, error) {
 		return "", err
 	}
 	go func() {
-		err := l.rds.SetArgs(ctx, shortened, res.GetOriginal(), redis.SetArgs{ExpireAt: res.GetExpireTime().AsTime()}).Err()
+		rdsCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), time.Second)
+		defer cancel()
+		err := l.rds.SetArgs(rdsCtx, shortened, res.GetOriginal(), redis.SetArgs{ExpireAt: res.GetExpireTime().AsTime()}).Err()
 		if err != nil {
-			slogbrick.FromCtx(ctx).Error("failed put link to LRU cache",
+			slogbrick.FromCtx(rdsCtx).Error("failed put link to LRU cache",
 				slog.String("shortened", shortened),
-				slog.String("original", original),
+				slog.String("original", res.GetOriginal()),
 				slog.Any("err", err))
 		}
 	}()
