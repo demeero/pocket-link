@@ -18,10 +18,16 @@ import (
 
 func Setup(svcName string, e *echo.Echo, links *link.Links) {
 	middlewares(svcName, e)
+	e.Any("/healthz", func(c echo.Context) error {
+		return c.NoContent(http.StatusOK)
+	})
 	e.Any("/*", redirect(links))
 }
 
 func middlewares(svcName string, e *echo.Echo) {
+	healthzSkipper := func(c echo.Context) bool {
+		return c.Request().URL.Path == "/healthz"
+	}
 	meterMW, err := echobrick.OTELMeterMW(echobrick.OTELMeterMWConfig{
 		Attrs: &echobrick.OTELMeterAttrsConfig{
 			Method:     true,
@@ -35,17 +41,17 @@ func middlewares(svcName string, e *echo.Echo) {
 			ReqSize:     true,
 			RespSize:    true,
 		},
-	})
+	}, healthzSkipper)
 	if err != nil {
 		log.Fatalf("failed create meter middleware: %s", err)
 	}
 	e.Pre(echomw.RemoveTrailingSlash())
 	e.Use(echobrick.RecoverSlogMW())
 	e.Use(echomw.CORS())
-	e.Use(otelecho.Middleware(svcName))
+	e.Use(otelecho.Middleware(svcName, otelecho.WithSkipper(healthzSkipper)))
 	e.Use(meterMW)
 	e.Use(echobrick.SlogCtxMW(echobrick.LogCtxMWConfig{Trace: true}))
-	e.Use(echobrick.SlogLogMW(slog.LevelDebug, nil))
+	e.Use(echobrick.SlogLogMW(slog.LevelDebug, healthzSkipper))
 }
 
 func redirect(links *link.Links) echo.HandlerFunc {
