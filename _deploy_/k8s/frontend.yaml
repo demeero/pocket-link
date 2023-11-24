@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/component: frontend
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: frontend
+      app.kubernetes.io/component: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/component: frontend
+    spec:
+      volumes:
+        - name: nginx-html
+          configMap:
+            name: nginx-html
+        - name: nginx-conf
+          configMap:
+            name: nginx-conf
+      containers:
+        - image: nginx:1.25-alpine
+          imagePullPolicy: Always
+          name: frontend
+          volumeMounts:
+            - name: nginx-html
+              mountPath: /var/www/pocket-link
+            - name: nginx-conf
+              mountPath: /etc/nginx
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+          lifecycle:
+            # this is to prevent the pod from being killed while it is still serving requests
+            # details: https://learnk8s.io/graceful-shutdown
+            preStop:
+              exec:
+                command: [ "sleep", "10" ]
+          livenessProbe:
+            httpGet:
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 30
+            timeoutSeconds: 5
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/component: frontend
+  name: frontend
+spec:
+  ports:
+    - name: "frontend-http-port"
+      port: 80
+      targetPort: 80
+  selector:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/component: frontend
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-basic-auth@kubernetescrd
+spec:
+  rules:
+    - host: pocket-link.demeero.space
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

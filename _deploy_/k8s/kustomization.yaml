@@ -6,6 +6,7 @@ resources:
   - keygen.yaml
   - links.yaml
   - redirects.yaml
+  - frontend.yaml
 
 # these labels will be automatically included in label selectors
 commonLabels:
@@ -28,6 +29,12 @@ configMapGenerator:
   - name: redirects
     envs:
       - redirects.env
+  - name: nginx-html
+    files:
+      - ../../frontend/index.html
+  - name: nginx-conf
+    files:
+      - nginx.conf
 
 replacements:
   - source:
