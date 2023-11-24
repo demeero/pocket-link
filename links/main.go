@@ -181,6 +181,7 @@ func grpcSrv(cfg configbrick.GRPC, s *service.Service) func() {
 		log.Fatalf("failed listen GRPC port: %s", err)
 	}
 	go func() {
+		healthSrv.SetServingStatus("links", grpc_health_v1.HealthCheckResponse_SERVING)
 		slog.Info("init grpc srv")
 		if err := grpcServ.Serve(lis); err != nil {
 			log.Fatalf("failed serve GRPC: %s", err)
