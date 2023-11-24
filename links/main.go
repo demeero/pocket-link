@@ -20,6 +20,8 @@ import (
 	"github.com/demeero/pocket-link/links/repository"
 	"github.com/demeero/pocket-link/links/service"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 
 	keygenpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/keygen/v1beta1"
 	pb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
@@ -172,7 +174,8 @@ func grpcSrv(cfg configbrick.GRPC, s *service.Service) func() {
 		reflection.Register(grpcServ)
 	}
 	pb.RegisterLinkServiceServer(grpcServ, rpc.New(s))
-
+	healthSrv := health.NewServer()
+	grpc_health_v1.RegisterHealthServer(grpcServ, healthSrv)
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
 	if err != nil {
 		log.Fatalf("failed listen GRPC port: %s", err)
@@ -184,6 +187,7 @@ func grpcSrv(cfg configbrick.GRPC, s *service.Service) func() {
 		}
 	}()
 	return func() {
+		healthSrv.Shutdown()
 		grpcServ.GracefulStop()
 	}
 }

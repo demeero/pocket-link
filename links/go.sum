@@ -21,10 +21,6 @@ github.com/cncf/xds/go v0.0.0-20230607035331-e9ce68804cb4/go.mod h1:eXthEFrGJvWH
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/demeero/bricks v0.0.0-20231123004008-5e1d417bef9d h1:yftz+tfRxzUxlenv5Gy2IehyOfbaA7wIKRGMGkYlTaE=
-github.com/demeero/bricks v0.0.0-20231123004008-5e1d417bef9d/go.mod h1:pEbfHApk2rBQSsQsvfWPEGpWi0unmTesbQDEYRQVYb4=
-github.com/demeero/bricks v0.0.0-20231123155948-6af69ba0897e h1:AJiXFXaJcY2UatKHdT4KI5zkysgAhZXK9Jb21wbVPz4=
-github.com/demeero/bricks v0.0.0-20231123155948-6af69ba0897e/go.mod h1:pEbfHApk2rBQSsQsvfWPEGpWi0unmTesbQDEYRQVYb4=
 github.com/demeero/bricks v0.0.0-20231123234849-679fbde05136 h1:LPA9pzVum9a658fUHQnITdo6EAhbBQ2FKZEBup7Jeso=
 github.com/demeero/bricks v0.0.0-20231123234849-679fbde05136/go.mod h1:pEbfHApk2rBQSsQsvfWPEGpWi0unmTesbQDEYRQVYb4=
 github.com/demeero/pocket-link/proto/gen/go v0.0.0-20231123015235-4f8442cabca3 h1:ZfBUfhmnJMhtvlzoQb4upJGriZGVD16psUXvIC2QD4Y=

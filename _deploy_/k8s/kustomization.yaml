@@ -28,6 +28,7 @@ configMapGenerator:
 replacements:
   - source:
       kind: Deployment
+      name: keygen
       fieldPath: spec.template.spec.containers.0.image
       options:
         delimiter: ":"
@@ -35,5 +36,19 @@ replacements:
     targets:
       - select:
           kind: Deployment
+          name: keygen
+        fieldPaths:
+          - spec.template.metadata.labels.[app.kubernetes.io/version]
+  - source:
+      kind: Deployment
+      name: links
+      fieldPath: spec.template.spec.containers.0.image
+      options:
+        delimiter: ":"
+        index: 1
+    targets:
+      - select:
+          kind: Deployment
+          name: links
         fieldPaths:
           - spec.template.metadata.labels.[app.kubernetes.io/version]
