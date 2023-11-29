@@ -33,6 +33,7 @@ spec:
               memory: 64Mi
             limits:
               memory: 128Mi
+              cpu: 200m
           lifecycle:
             # this is to prevent the pod from being killed while it is still serving requests
             # details: https://learnk8s.io/graceful-shutdown
@@ -71,3 +72,28 @@ spec:
   selector:
     app.kubernetes.io/name: links
     app.kubernetes.io/component: server
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: links
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: links
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
