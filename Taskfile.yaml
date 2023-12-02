@@ -17,7 +17,7 @@ tasks:
       - git commit -m "release $(semver get release)"
       - git push origin master:master
       - gh release create --draft $(semver get release) --target master --generate-notes
-      - gh release view $$(semver get release) --web
+      - gh release view $(semver get release) --web
 
   release:patch:
     desc: Release a new patch version
