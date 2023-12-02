@@ -1,5 +1,10 @@
 version: "3"
 
+includes:
+  keygen: ./keygen
+  links: ./links
+  redirects: ./redirects
+
 tasks:
   ensure_main:
     internal: true
@@ -42,3 +47,8 @@ tasks:
     cmds:
       - semver up major
       - task: tag_release
+
+  deploy:k8s:
+    desc: Deploy to k8s
+    cmds:
+      - kubectl kustomize --load-restrictor LoadRestrictionsNone _deploy_/k8s | kubectl apply -f -
