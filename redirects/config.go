@@ -5,6 +5,7 @@ import (
 )
 
 type config struct {
+	Profiler configbrick.PyroscopeProfiler `json:"profiler"`
 	configbrick.AppMeta
 	Links    linksClient       `json:"links"`
 	OTEL     configbrick.OTEL  `json:"otel"`

@@ -16,6 +16,7 @@ import (
 	"github.com/demeero/bricks/otelbrick"
 	"github.com/demeero/bricks/slogbrick"
 	linkpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
+	"github.com/grafana/pyroscope-go"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	echolog "github.com/labstack/gommon/log"
@@ -42,6 +43,8 @@ func main() {
 		AddSource: cfg.Log.AddSource,
 		JSON:      cfg.Log.JSON,
 	})
+
+	stopProfiling := profiling(cfg)
 
 	ctx := context.Background()
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
@@ -104,6 +107,7 @@ func main() {
 	if err := conn.Close(); err != nil {
 		slog.Error("failed shutdown grpc links connection", slog.Any("err", err))
 	}
+	stopProfiling()
 }
 
 func httpSrv(svcName string, cfg configbrick.HTTP, l *link.Links) func(ctx context.Context) {
@@ -127,6 +131,34 @@ func httpSrv(svcName string, cfg configbrick.HTTP, l *link.Links) func(ctx conte
 	return func(ctx context.Context) {
 		if err := e.Shutdown(ctx); err != nil {
 			slog.Error("failed shutdown http srv", slog.Any("err", err))
+		}
+	}
+}
+
+func profiling(cfg config) func() {
+	if !cfg.Profiler.Enabled {
+		return func() {}
+	}
+	p, err := pyroscope.Start(pyroscope.Config{
+		ApplicationName: fmt.Sprintf("%s.%s", cfg.ServiceNamespace, cfg.ServiceName),
+		ServerAddress:   cfg.Profiler.ServerAddress,
+		Logger:          nil,
+		Tags:            map[string]string{"env": cfg.Env, "version": cfg.Version},
+		ProfileTypes: []pyroscope.ProfileType{
+			pyroscope.ProfileCPU,
+			pyroscope.ProfileAllocObjects,
+			pyroscope.ProfileAllocSpace,
+			pyroscope.ProfileInuseObjects,
+			pyroscope.ProfileInuseSpace,
+		},
+	})
+	if err != nil {
+		slog.Error("failed start profiler", slog.Any("err", err))
+		return func() {}
+	}
+	return func() {
+		if err := p.Stop(); err != nil {
+			slog.Error("failed shutdown profiler", slog.Any("err", err))
 		}
 	}
 }

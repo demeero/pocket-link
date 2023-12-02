@@ -4,10 +4,11 @@ go 1.21
 
 require (
 	github.com/alicebob/miniredis v2.5.0+incompatible
-	github.com/demeero/bricks v0.0.0-20231124105717-d49a073554b5
+	github.com/demeero/bricks v0.0.0-20231202151434-cf972a1879d8
 	github.com/demeero/pocket-link/proto/gen/go v0.0.0-20231123000339-17de94891ab0
 	github.com/go-redis/redismock/v9 v9.0.3
 	github.com/golang/mock v1.6.0
+	github.com/grafana/pyroscope-go v1.0.4
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.11.3
 	github.com/labstack/gommon v0.4.1
@@ -35,6 +36,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.1.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/gomodule/redigo v1.8.9 // indirect
+	github.com/grafana/pyroscope-go/godeltaprof v0.1.4 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20231016141302-07b5767bb0ed // indirect
