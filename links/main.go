@@ -51,22 +51,7 @@ func main() {
 		JSON:      cfg.Log.JSON,
 	})
 
-	p, err := pyroscope.Start(pyroscope.Config{
-		ApplicationName: fmt.Sprintf("%s.%s", cfg.ServiceNamespace, cfg.ServiceName),
-		ServerAddress:   cfg.Profiler.ServerAddress,
-		Logger:          nil,
-		Tags:            map[string]string{"env": cfg.Env, "version": cfg.Version},
-		ProfileTypes: []pyroscope.ProfileType{
-			pyroscope.ProfileCPU,
-			pyroscope.ProfileAllocObjects,
-			pyroscope.ProfileAllocSpace,
-			pyroscope.ProfileInuseObjects,
-			pyroscope.ProfileInuseSpace,
-		},
-	})
-	if err != nil {
-		slog.Error("failed start profiler", slog.Any("err", err))
-	}
+	stopProfiling := profiling(cfg)
 
 	ctx := context.Background()
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
@@ -137,11 +122,7 @@ func main() {
 	if err := keygenClientConn.Close(); err != nil {
 		slog.Error("failed shutdown grpc links connection", slog.Any("err", err))
 	}
-	if p != nil {
-		if err := p.Stop(); err != nil {
-			slog.Error("failed shutdown profiler", slog.Any("err", err))
-		}
-	}
+	stopProfiling()
 }
 
 func mongoDB(cfg configbrick.Mongo) (client *mongo.Client, shutdown func(ctx context.Context)) {

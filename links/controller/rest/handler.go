@@ -48,7 +48,7 @@ func middlewares(svcName string, e *echo.Echo) {
 			ReqSize:     true,
 			RespSize:    true,
 		},
-	})
+	}, nil)
 	if err != nil {
 		log.Fatalf("failed create meter middleware: %s", err)
 	}
