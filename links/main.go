@@ -19,12 +19,9 @@ import (
 	"github.com/demeero/pocket-link/links/controller/rpc"
 	"github.com/demeero/pocket-link/links/repository"
 	"github.com/demeero/pocket-link/links/service"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/health"
-	"google.golang.org/grpc/health/grpc_health_v1"
-
 	keygenpb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/keygen/v1beta1"
 	pb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/link/v1beta1"
+	"github.com/grafana/pyroscope-go"
 	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -34,6 +31,9 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -50,6 +50,23 @@ func main() {
 		AddSource: cfg.Log.AddSource,
 		JSON:      cfg.Log.JSON,
 	})
+
+	p, err := pyroscope.Start(pyroscope.Config{
+		ApplicationName: fmt.Sprintf("%s.%s", cfg.ServiceNamespace, cfg.ServiceName),
+		ServerAddress:   cfg.Profiler.ServerAddress,
+		Logger:          nil,
+		Tags:            map[string]string{"env": cfg.Env, "version": cfg.Version},
+		ProfileTypes: []pyroscope.ProfileType{
+			pyroscope.ProfileCPU,
+			pyroscope.ProfileAllocObjects,
+			pyroscope.ProfileAllocSpace,
+			pyroscope.ProfileInuseObjects,
+			pyroscope.ProfileInuseSpace,
+		},
+	})
+	if err != nil {
+		slog.Error("failed start profiler", slog.Any("err", err))
+	}
 
 	ctx := context.Background()
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
@@ -110,6 +127,7 @@ func main() {
 	defer cancel()
 	httpShutdown(httpShutdownCtx)
 	grpcShutdown()
+	mShutdown(context.Background())
 	if err := meterShutdown(context.Background()); err != nil {
 		slog.Error("failed shutdown meter provider", slog.Any("err", err))
 	}
@@ -119,7 +137,11 @@ func main() {
 	if err := keygenClientConn.Close(); err != nil {
 		slog.Error("failed shutdown grpc links connection", slog.Any("err", err))
 	}
-	mShutdown(context.Background())
+	if p != nil {
+		if err := p.Stop(); err != nil {
+			slog.Error("failed shutdown profiler", slog.Any("err", err))
+		}
+	}
 }
 
 func mongoDB(cfg configbrick.Mongo) (client *mongo.Client, shutdown func(ctx context.Context)) {
@@ -190,5 +212,33 @@ func grpcSrv(cfg configbrick.GRPC, s *service.Service) func() {
 	return func() {
 		healthSrv.Shutdown()
 		grpcServ.GracefulStop()
+	}
+}
+
+func profiling(cfg config) func() {
+	if !cfg.Profiler.Enabled {
+		return func() {}
+	}
+	p, err := pyroscope.Start(pyroscope.Config{
+		ApplicationName: fmt.Sprintf("%s.%s", cfg.ServiceNamespace, cfg.ServiceName),
+		ServerAddress:   cfg.Profiler.ServerAddress,
+		Logger:          nil,
+		Tags:            map[string]string{"env": cfg.Env, "version": cfg.Version},
+		ProfileTypes: []pyroscope.ProfileType{
+			pyroscope.ProfileCPU,
+			pyroscope.ProfileAllocObjects,
+			pyroscope.ProfileAllocSpace,
+			pyroscope.ProfileInuseObjects,
+			pyroscope.ProfileInuseSpace,
+		},
+	})
+	if err != nil {
+		slog.Error("failed start profiler", slog.Any("err", err))
+		return func() {}
+	}
+	return func() {
+		if err := p.Stop(); err != nil {
+			slog.Error("failed shutdown profiler", slog.Any("err", err))
+		}
 	}
 }

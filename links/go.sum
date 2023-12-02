@@ -21,8 +21,8 @@ github.com/cncf/xds/go v0.0.0-20230607035331-e9ce68804cb4/go.mod h1:eXthEFrGJvWH
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/demeero/bricks v0.0.0-20231123234849-679fbde05136 h1:LPA9pzVum9a658fUHQnITdo6EAhbBQ2FKZEBup7Jeso=
-github.com/demeero/bricks v0.0.0-20231123234849-679fbde05136/go.mod h1:pEbfHApk2rBQSsQsvfWPEGpWi0unmTesbQDEYRQVYb4=
+github.com/demeero/bricks v0.0.0-20231202145914-236350512c03 h1:cqCVp88V0yewv6Dtr/HdXn0buBTll+n4/SXDxIN8ssQ=
+github.com/demeero/bricks v0.0.0-20231202145914-236350512c03/go.mod h1:pEbfHApk2rBQSsQsvfWPEGpWi0unmTesbQDEYRQVYb4=
 github.com/demeero/pocket-link/proto/gen/go v0.0.0-20231123015235-4f8442cabca3 h1:ZfBUfhmnJMhtvlzoQb4upJGriZGVD16psUXvIC2QD4Y=
 github.com/demeero/pocket-link/proto/gen/go v0.0.0-20231123015235-4f8442cabca3/go.mod h1:podYehWV93iy7HLpRjDGNxX6k6n8sIpdIhfDSDCji5M=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
@@ -80,6 +80,10 @@ github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/grafana/pyroscope-go v1.0.4 h1:oyQX0BOkL+iARXzHuCdIF5TQ7/sRSel1YFViMHC7Bm0=
+github.com/grafana/pyroscope-go v1.0.4/go.mod h1:0d7ftwSMBV/Awm7CCiYmHQEG8Y44Ma3YSjt+nWcWztY=
+github.com/grafana/pyroscope-go/godeltaprof v0.1.4 h1:mDsJ3ngul7UfrHibGQpV66PbZ3q1T8glz/tK3bQKKEk=
+github.com/grafana/pyroscope-go/godeltaprof v0.1.4/go.mod h1:1HSPtjU8vLG0jE9JrTdzjgFqdJ/VgN7fvxBNq3luJko=
 github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 h1:UH//fgunKIs4JdUbpDl1VZCDaL56wXCB/5+wF6uHfaI=
 github.com/grpc-ecosystem/go-grpc-middleware v1.4.0/go.mod h1:g5qyo/la0ALbONm6Vbp88Yd8NsDy6rZz+RcrMPxvld8=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.1 h1:6UKoz5ujsI55KNpsJH3UwCq3T8kKbZwNZBNPuTTje8U=

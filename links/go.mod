@@ -4,9 +4,10 @@ go 1.21
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
-	github.com/demeero/bricks v0.0.0-20231123234849-679fbde05136
+	github.com/demeero/bricks v0.0.0-20231202145914-236350512c03
 	github.com/demeero/pocket-link/proto/gen/go v0.0.0-20231123015235-4f8442cabca3
 	github.com/golang/mock v1.6.0
+	github.com/grafana/pyroscope-go v1.0.4
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.11.3
@@ -32,6 +33,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.1.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/grafana/pyroscope-go/godeltaprof v0.1.4 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/klauspost/compress v1.17.3 // indirect
