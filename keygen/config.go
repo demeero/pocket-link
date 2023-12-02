@@ -6,8 +6,9 @@ import (
 	"github.com/demeero/bricks/configbrick"
 )
 
-// Config represents the configuration of application.
-type Config struct {
+// config represents the configuration of application.
+type config struct {
+	Profiler configbrick.PyroscopeProfiler `json:"profiler"`
 	configbrick.AppMeta
 	UsedKeysRepositoryType UsedKeysRepositoryType `required:"true" split_words:"true" json:"used_keys_repository_type"`
 	OTEL                   configbrick.OTEL       `json:"otel"`

@@ -18,6 +18,7 @@ import (
 	mongorepo "github.com/demeero/pocket-link/keygen/repository/mongo"
 	redisrepo "github.com/demeero/pocket-link/keygen/repository/redis"
 	pb "github.com/demeero/pocket-link/proto/gen/go/pocketlink/keygen/v1beta1"
+	"github.com/grafana/pyroscope-go"
 	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/extra/redisotel/v9"
@@ -38,13 +39,15 @@ func main() {
 		log.Fatal("failed load .env file", err)
 	}
 
-	cfg := Config{}
+	cfg := config{}
 	configbrick.LoadConfig(&cfg, os.Getenv("LOG_CONFIG") == "true")
 	slogbrick.Configure(slogbrick.Config{
 		Level:     cfg.Log.Level,
 		AddSource: cfg.Log.AddSource,
 		JSON:      cfg.Log.JSON,
 	})
+
+	stopProfiling := profiling(cfg)
 
 	ctx := context.Background()
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
@@ -107,6 +110,7 @@ func main() {
 	if err := traceShutdown(context.Background()); err != nil {
 		slog.Error("failed shutdown tracer provider", slog.Any("err", err))
 	}
+	stopProfiling()
 }
 
 func grpcServ(cfg configbrick.GRPC, k *key.Keys) func() {
@@ -155,7 +159,7 @@ func createUnusedKeysRepo(cfg configbrick.Redis) *redisrepo.UnusedKeys {
 	return redisrepo.NewUnusedKeys(client)
 }
 
-func createUsedKeysRepo(cfg Config) (key.UsedKeysRepository, error) {
+func createUsedKeysRepo(cfg config) (key.UsedKeysRepository, error) {
 	if cfg.UsedKeysRepositoryType == "" {
 		cfg.UsedKeysRepositoryType = UsedKeysRepositoryTypeRedis
 	}
@@ -180,5 +184,33 @@ func createUsedKeysRepo(cfg Config) (key.UsedKeysRepository, error) {
 		return redisrepo.NewUsedKeys(client), nil
 	default:
 		return nil, fmt.Errorf("unsupported used keys repository type: %s", cfg.UsedKeysRepositoryType)
+	}
+}
+
+func profiling(cfg config) func() {
+	if !cfg.Profiler.Enabled {
+		return func() {}
+	}
+	p, err := pyroscope.Start(pyroscope.Config{
+		ApplicationName: fmt.Sprintf("%s.%s", cfg.ServiceNamespace, cfg.ServiceName),
+		ServerAddress:   cfg.Profiler.ServerAddress,
+		Logger:          nil,
+		Tags:            map[string]string{"env": cfg.Env, "version": cfg.Version},
+		ProfileTypes: []pyroscope.ProfileType{
+			pyroscope.ProfileCPU,
+			pyroscope.ProfileAllocObjects,
+			pyroscope.ProfileAllocSpace,
+			pyroscope.ProfileInuseObjects,
+			pyroscope.ProfileInuseSpace,
+		},
+	})
+	if err != nil {
+		slog.Error("failed start profiler", slog.Any("err", err))
+		return func() {}
+	}
+	return func() {
+		if err := p.Stop(); err != nil {
+			slog.Error("failed shutdown profiler", slog.Any("err", err))
+		}
 	}
 }

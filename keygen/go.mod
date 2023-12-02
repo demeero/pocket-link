@@ -5,10 +5,11 @@ go 1.21
 require (
 	github.com/alicebob/miniredis/v2 v2.31.0
 	github.com/avast/retry-go/v3 v3.1.1
-	github.com/demeero/bricks v0.0.0-20231123234849-679fbde05136
+	github.com/demeero/bricks v0.0.0-20231202151434-cf972a1879d8
 	github.com/demeero/pocket-link/proto/gen/go v0.0.0-20230411231352-c33120754a41
 	github.com/go-redis/redismock/v9 v9.0.3
 	github.com/golang/mock v1.6.0
+	github.com/grafana/pyroscope-go v1.0.4
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/joho/godotenv v1.5.1
 	github.com/redis/go-redis/extra/redisotel/v9 v9.0.5
@@ -33,6 +34,7 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/grafana/pyroscope-go/godeltaprof v0.1.4 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/klauspost/compress v1.17.3 // indirect
