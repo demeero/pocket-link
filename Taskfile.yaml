@@ -1,0 +1,44 @@
+version: "3"
+
+tasks:
+  ensure_main:
+    internal: true
+    desc: Ensure we are on main branch
+    cmds:
+      - git checkout master
+      - git fetch
+      - git rebase origin/master
+
+  tag_release:
+    internal: true
+    desc: Tag a new release
+    cmds:
+      - git add .semver.yaml
+      - git commit -m "release $$(semver get release)"
+      - git push origin master:master
+      - gh release create --draft $$(semver get release) --target master --generate-notes
+      - gh release view $$(semver get release) --web
+
+  release:patch:
+    desc: Release a new patch version
+    deps:
+      - ensure_main
+    cmds:
+      - semver up release
+      - task: tag_release
+
+  release:minor:
+    desc: Release a new minor version
+    deps:
+      - ensure_main
+    cmds:
+      - semver up minor
+      - task: tag_release
+
+  release:major:
+    desc: Release a new major version
+    deps:
+      - ensure_main
+    cmds:
+      - semver up major
+      - task: tag_release
