@@ -88,6 +88,9 @@ func main() {
 	if err := redisotel.InstrumentTracing(client); err != nil {
 		slog.Error("failed instrument redis client with tracing", slog.Any("err", err))
 	}
+	if err := redisotel.InstrumentMetrics(client); err != nil {
+		slog.Error("failed instrument redis client with metrics", slog.Any("err", err))
+	}
 	l := link.New(linkpb.NewLinkServiceClient(conn), client)
 	httpShutdown := httpSrv(cfg.ServiceName, cfg.HTTP, l)
 
