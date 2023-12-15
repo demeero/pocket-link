@@ -156,6 +156,9 @@ func createUnusedKeysRepo(cfg configbrick.Redis) *redisrepo.UnusedKeys {
 	if err := redisotel.InstrumentTracing(client); err != nil {
 		slog.Error("failed instrument tracing to redis client for unused keys", slog.Any("err", err))
 	}
+	if err := redisotel.InstrumentMetrics(client); err != nil {
+		slog.Error("failed instrument metrics to redis client for unused keys", slog.Any("err", err))
+	}
 	return redisrepo.NewUnusedKeys(client)
 }
 
