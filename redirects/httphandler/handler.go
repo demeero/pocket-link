@@ -31,7 +31,7 @@ func middlewares(svcName string, e *echo.Echo) {
 	meterMW, err := echobrick.OTELMeterMW(echobrick.OTELMeterMWConfig{
 		Attrs: &echobrick.OTELMeterAttrsConfig{
 			Method:     true,
-			Path:       true,
+			Route:      true,
 			Status:     true,
 			AttrsToCtx: true,
 		},
